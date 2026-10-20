@@ -10,6 +10,8 @@
     radiusKm: 70,
     provinceCode: '62',
     province: 'กำแพงเพชร',
+    // ใช้ตั้งชื่อไฟล์ดาวน์โหลด
+    slug: 'kamphaengphet',
     // Longdo key สำหรับโหมด static (ผูกกับ domain เช่น <user>.github.io) เว้นว่างได้
     longdoKey: '',
   };

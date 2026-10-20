@@ -41,6 +41,12 @@ jobs:
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
         run: node scripts/fetch-gistda.js
+      - name: Build download files (GeoJSON, Shapefile, KMZ)
+        run: |
+          if [ -d public/data/gistda/downloads ]; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq gdal-bin zip > /dev/null
+          fi
+          node scripts/build-downloads.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

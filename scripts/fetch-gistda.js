@@ -5,10 +5,13 @@
 const fs = require('fs');
 const path = require('path');
 const TF = require('../public/shared');
-const { SLIM, fetchFloodFreq, hasH3 } = require('../lib/gistda-slim');
+const { SLIM, exportFlood, fetchFloodFreq, hasH3 } = require('../lib/gistda-slim');
 
 const KEY = process.env.GISTDA_API_KEY || '';
 const OUT = path.join(__dirname, '..', 'public', 'data', 'gistda');
+// GeoJSON รูปทรงเดิมสำหรับไฟล์ดาวน์โหลด (scripts/build-downloads.js แปลงต่อเป็น SHP/KMZ)
+const DL = path.join(OUT, 'downloads');
+const EXPORT = ['7days', '30days'];
 // น้ำท่วมซ้ำซากเป็นข้อมูลรายปี ไฟล์ใหญ่ ดึงใหม่เมื่อเก่ากว่านี้ (workflow เก็บ cache ไว้)
 const FREQ_MAX_AGE_DAYS = 30;
 
@@ -27,9 +30,22 @@ const write = (name, obj) => {
   fs.mkdirSync(OUT, { recursive: true });
   const meta = { updated: new Date().toISOString(), datasets: {} };
 
+  fs.mkdirSync(DL, { recursive: true });
   for (const name of Object.keys(SLIM)) {
     try {
-      const fc = await TF.fetchGistda(name, TF.SETTINGS, KEY, SLIM[name]);
+      const raw = [];
+      const fc = await TF.fetchGistda(name, TF.SETTINGS, KEY, (f) => {
+        if (EXPORT.includes(name)) raw.push(exportFlood(f));
+        return SLIM[name](f);
+      });
+      if (EXPORT.includes(name)) {
+        const base = `gistda_flood_${name}_${TF.SETTINGS.slug}`;
+        fs.writeFileSync(path.join(DL, `${base}.geojson`), JSON.stringify({
+          type: 'FeatureCollection', name: base,
+          crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } },
+          features: raw,
+        }));
+      }
       const size = write(name, fc);
       meta.datasets[name] = { ok: true, count: fc.features.length };
       console.log(`${name}: ${fc.features.length} features, ${size}`);
