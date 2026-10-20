@@ -52,7 +52,7 @@ async function staticApi(path) {
   }
   if (p.startsWith('gistda/')) {
     const name = p.slice(7);
-    if (!TF.GISTDA.datasets[name]) throw new Error('ไม่รู้จักชุดข้อมูล ' + name);
+    if (!TF.GISTDA.datasets[name] && name !== 'flood-freq-summary') throw new Error('ไม่รู้จักชุดข้อมูล ' + name);
     return fetchJson(`data/gistda/${name}.json`);
   }
   if (p === 'waterlevel') return { data: TF.parseWaterLevels(await fetchJson(TF.URLS.waterlevel), cfg) };
@@ -104,12 +104,19 @@ function initMap() {
   wlLayer = L.layerGroup().addTo(map);
   rainLayer = L.layerGroup().addTo(map);
   const gistdaLayer = (title, color, opacity) => L.geoJSON(null, {
-    style: { color, weight: 0.5, fillColor: color, fillOpacity: opacity },
+    style: typeof color === 'function' ? color : { color, weight: 0.5, fillColor: color, fillOpacity: opacity },
     pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, color, fillColor: color, fillOpacity: 0.8, weight: 1 }),
     onEachFeature: (f, layer) => layer.bindPopup(propsTable(title, f)),
   });
-  floodLayer = gistdaLayer('พื้นที่น้ำท่วม (GISTDA)', '#ff6b00', 0.55).addTo(map);
-  freqLayer = gistdaLayer('พื้นที่น้ำท่วมซ้ำซาก (GISTDA)', '#ae3ec9', 0.35);
+  // ความเข้มสี = สัดส่วนพื้นที่ที่ท่วมในเซลล์ H3
+  floodLayer = gistdaLayer('พื้นที่น้ำท่วม (GISTDA)', (f) => {
+    const p = f.properties, frac = p.cell_m2 ? Math.min(1, p.area_m2 / p.cell_m2) : 0.5;
+    return { color: '#ff6b00', weight: 0.3, fillColor: '#ff6b00', fillOpacity: 0.25 + 0.6 * frac };
+  }).addTo(map);
+  freqLayer = gistdaLayer('พื้นที่น้ำท่วมซ้ำซาก (GISTDA)', (f) => {
+    const n = f.properties.freq || 5;
+    return { color: '#ae3ec9', weight: 0.4, fillColor: n >= 7 ? '#5f0f7a' : n >= 6 ? '#862e9c' : '#ae3ec9', fillOpacity: 0.6 };
+  });
   hyacinthLayer = gistdaLayer('ผักตบชวา / สิ่งกีดขวางทางน้ำ (GISTDA)', '#2b8a3e', 0.7);
   radarLayer = L.layerGroup();
   // tile ภาพน้ำท่วมทั้งประเทศ ใช้ได้เฉพาะตอนรันผ่าน server.js (ต้องแนบ key)
@@ -141,13 +148,57 @@ function initMap() {
   });
 }
 
+const PROP_LABELS = {
+  name: ['ชื่อลำน้ำ'], river: ['ลุ่มน้ำย่อย'], tb: ['ตำบล'], ap: ['อำเภอ'], pv: ['จังหวัด'],
+  area_m2: ['พื้นที่ท่วม', (v) => `${fmt(v / 1600, 1)} ไร่`], area_rai: ['พื้นที่', (v) => `${fmt(v, 1)} ไร่`],
+  freq: ['ท่วมซ้ำ', (v) => `${v} ปี (จาก 14 ปี)`], years: ['ปีที่ท่วม'],
+  population: ['ประชากรโดยประมาณ', (v) => fmt(v, 0) + ' คน'], building: ['อาคาร'], school: ['โรงเรียน'], hospital: ['โรงพยาบาล'],
+  road_m: ['ถนน', (v) => fmt(v / 1000, 2) + ' กม.'], rice_m2: ['นาข้าว', (v) => fmt(v / 1600, 1) + ' ไร่'],
+  maize_m2: ['ข้าวโพด', (v) => fmt(v / 1600, 1) + ' ไร่'], cassava_m2: ['มันสำปะหลัง', (v) => fmt(v / 1600, 1) + ' ไร่'],
+  sugarcane_m2: ['อ้อย', (v) => fmt(v / 1600, 1) + ' ไร่'], image_date: ['ภาพดาวเทียมล่าสุด'], agency: ['หน่วยงาน'], image: ['ภาพที่ใช้'],
+};
 function propsTable(title, f) {
-  const rai = window.TrackFlood.areaM2(f.geometry) / 1600;
   const rows = Object.entries(f.properties || {})
-    .filter(([k, v]) => v !== null && typeof v !== 'object' && !/^_/.test(k))
-    .slice(0, 14)
-    .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
-  return `<b>${esc(title)}</b>${rai ? ` · ประมาณ ${fmt(rai, 1)} ไร่` : ''}<table>${rows}</table>`;
+    .filter(([k, v]) => PROP_LABELS[k] && v !== null && v !== '' && v !== 0)
+    .map(([k, v]) => `<tr><td>${PROP_LABELS[k][0]}</td><td>${esc(PROP_LABELS[k][1] ? PROP_LABELS[k][1](v) : v)}</td></tr>`).join('');
+  return `<b>${esc(title)}</b><table>${rows}</table>`;
+}
+
+// พื้นที่ท่วมจริง (ตร.ม.) ใช้ค่าจาก GISTDA ถ้ามี ไม่งั้นคำนวณจากรูปทรง
+const floodM2 = (f) => f.properties?.area_m2 ?? window.TrackFlood.areaM2(f.geometry);
+
+function renderImpact(fc) {
+  const rows = {};
+  for (const f of fc.features) {
+    const p = f.properties, k = p.ap || '-';
+    const r = (rows[k] ||= { ap: k, m2: 0, pop: 0, bld: 0, school: 0, hosp: 0, rice: 0, road: 0 });
+    r.m2 += floodM2(f); r.pop += p.population || 0; r.bld += p.building || 0; r.school += p.school || 0;
+    r.hosp += p.hospital || 0; r.rice += p.rice_m2 || 0; r.road += p.road_m || 0;
+  }
+  const list = Object.values(rows).sort((a, b) => b.m2 - a.m2);
+  const n = (v, d = 0) => Number(v).toLocaleString('th-TH', { maximumFractionDigits: d });
+  $('#impact tbody').innerHTML = list.map((r) => `<tr><td>${esc(r.ap)}</td><td class="num"><b>${n(r.m2 / 1600)}</b></td>
+    <td class="num">${n(r.rice / 1600)}</td><td class="num">${n(r.pop)}</td><td class="num">${n(r.bld)}</td>
+    <td class="num">${n(r.school)}</td><td class="num">${n(r.hosp)}</td><td class="num">${n(r.road / 1000, 1)}</td></tr>`).join('')
+    || '<tr><td colspan="8" class="hint">ไม่พบพื้นที่น้ำท่วมในช่วงนี้</td></tr>';
+}
+
+async function loadFreqSummary() {
+  if (!cfg.hasGistda) return;
+  try {
+    const s = await api('api/gistda/flood-freq-summary');
+    const n = (v) => Number(v || 0).toLocaleString('th-TH');
+    $('#freq-table thead tr').innerHTML = '<th>อำเภอ</th><th class="num">รวม (ไร่)</th>' +
+      [1, 2, 3, 4, 5, 6, 7].map((k) => `<th class="num">${k} ปี${k === 7 ? '+' : ''}</th>`).join('');
+    $('#freq-table tbody').innerHTML = s.amphoe.map((r) => {
+      const plus7 = Object.entries(r.byFreq).filter(([k]) => +k >= 7).reduce((a, [, v]) => a + v, 0);
+      return `<tr><td>${esc(r.ap)}</td><td class="num"><b>${n(r.total_rai)}</b></td>` +
+        [1, 2, 3, 4, 5, 6].map((k) => `<td class="num">${n(r.byFreq[k])}</td>`).join('') + `<td class="num">${n(plus7)}</td></tr>`;
+    }).join('');
+    $('#freq-hint').textContent = `จำนวนปีที่ถูกน้ำท่วมในช่วง 2554–2567 · บนแผนที่แสดงเฉพาะพื้นที่ที่ท่วม ${s.freqMin} ปีขึ้นไป`;
+  } catch (e) {
+    $('#freq-hint').textContent = 'โหลดไม่สำเร็จ: ' + e.message;
+  }
 }
 
 async function loadRadar() {
@@ -279,12 +330,14 @@ async function loadFlood() {
     const fc = await api(`api/gistda/${period}`);
     floodLayer.addData(fc);
     if (floodTiles) floodTiles.setUrl(`api/gistda/tms/${period}/{z}/{x}/{y}`);
-    const rai = fc.features.reduce((s, f) => s + window.TrackFlood.areaM2(f.geometry), 0) / 1600;
+    const rai = fc.features.reduce((s, f) => s + floodM2(f), 0) / 1600;
+    const pop = fc.features.reduce((s, f) => s + (f.properties.population || 0), 0);
+    renderImpact(fc);
     const label = $('#gistda-period').selectedOptions[0].textContent;
     const when = fc.updated || cfg.gistdaUpdated;
     setKpi('#kpi-flood',
       `${Math.round(rai).toLocaleString('th-TH')} ไร่`,
-      `จ.${cfg.province} ย้อนหลัง ${label} · ${fc.features.length.toLocaleString('th-TH')} แปลง` +
+      `จ.${cfg.province} ย้อนหลัง ${label} · ประชากรในพื้นที่ ~${Math.round(pop).toLocaleString('th-TH')} คน` +
         (when ? ` · ดึงเมื่อ ${new Date(when).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}` : ''),
       fc.features.length ? '#ff6b00' : LEVELS[3].color);
     return { total: fc.features.length, rai };
@@ -425,5 +478,6 @@ async function refreshAll() {
     overall(last);
   });
   await refreshAll();
+  loadFreqSummary();
   setInterval(refreshAll, REFRESH_MS);
 })();

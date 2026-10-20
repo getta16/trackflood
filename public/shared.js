@@ -143,12 +143,13 @@
   };
 
   // ดึงข้อมูลทุกหน้า (limit/offset) ใช้ใน server.js และ scripts/fetch-gistda.js
-  async function fetchGistda(name, cfg, apiKey) {
+  // transform(feature) คืน feature ที่ย่อแล้ว หรือ null เพื่อตัดทิ้ง (แปลงทีละหน้าเพื่อไม่ให้กินหน่วยความจำ)
+  async function fetchGistda(name, cfg, apiKey, transform) {
     const ds = GISTDA.datasets[name];
     if (!ds) throw new Error('ไม่รู้จักชุดข้อมูล ' + name);
     const features = [];
     const limit = 1000;
-    for (let offset = 0; offset < 50000; offset += limit) {
+    for (let offset = 0; offset < 1000000; offset += limit) {
       const q = new URLSearchParams({ limit, offset });
       if (ds.by === 'province') q.set('pv_idn', cfg.provinceCode);
       else q.set('bbox', GISTDA.bbox.join(','));
@@ -168,7 +169,9 @@
         // ตัด links ทิ้ง เพราะ gateway แนบ key มาใน url
         const p = { ...(f.properties || {}) };
         delete p.links;
-        features.push({ type: 'Feature', geometry: f.geometry, properties: p });
+        const feat = { type: 'Feature', geometry: f.geometry, properties: p };
+        const out = transform ? transform(feat) : feat;
+        if (out) features.push(out);
       }
       if (page.length < limit) break;
     }

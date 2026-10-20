@@ -1,0 +1,13 @@
+{
+  "name": "trackflood",
+  "private": true,
+  "description": "ติดตามสถานการณ์น้ำ จังหวัดกำแพงเพชร",
+  "scripts": {
+    "start": "node server.js",
+    "fetch-gistda": "node scripts/fetch-gistda.js"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "h3-js": "4.5.0"
+  }
+}

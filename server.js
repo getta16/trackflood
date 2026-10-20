@@ -20,6 +20,7 @@ const GISTDA_API_KEY = process.env.GISTDA_API_KEY || '';
 const LONGDO_API_KEY = process.env.LONGDO_API_KEY || '';
 
 const TF = require('./public/shared');
+const { SLIM, fetchFloodFreq } = require('./lib/gistda-slim');
 const CFG = { ...TF.SETTINGS, radiusKm: Number(process.env.RADIUS_KM || TF.SETTINGS.radiusKm) };
 
 // ---------- cache ----------
@@ -60,7 +61,12 @@ function needGistdaKey() {
 }
 async function gistdaFeatures(name) {
   needGistdaKey();
-  return cached('gistda:' + name, 30 * 60e3, () => TF.fetchGistda(name, CFG, GISTDA_API_KEY));
+  if (name === 'flood-freq' || name === 'flood-freq-summary') {
+    // ข้อมูลรายปี ชุดใหญ่ เก็บ cache 1 วัน
+    const freq = await cached('gistda:freq', 24 * 3600e3, () => fetchFloodFreq(CFG, GISTDA_API_KEY));
+    return name === 'flood-freq' ? freq.map : freq.summary;
+  }
+  return cached('gistda:' + name, 30 * 60e3, () => TF.fetchGistda(name, CFG, GISTDA_API_KEY, SLIM[name]));
 }
 
 // ส่งต่อ tile ภาพ (TMS) โดยแนบ API-Key ฝั่ง server
@@ -108,7 +114,7 @@ async function handleApi(url, res) {
       return await gistdaTile(res, m[1], m[2], m[3], m[4]);
     }
     if ((m = p.match(/^\/api\/gistda\/([\w-]+)$/))) {
-      if (!TF.GISTDA.datasets[m[1]]) return send(res, 400, { error: 'ชุดข้อมูลต้องเป็น ' + Object.keys(TF.GISTDA.datasets).join(', ') });
+      if (!TF.GISTDA.datasets[m[1]] && m[1] !== 'flood-freq-summary') return send(res, 400, { error: 'ชุดข้อมูลต้องเป็น ' + Object.keys(TF.GISTDA.datasets).join(', ') });
       return send(res, 200, { updated: new Date().toISOString(), ...(await gistdaFeatures(m[1])) });
     }
     send(res, 404, { error: 'not found' });

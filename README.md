@@ -6,7 +6,8 @@
 
 ```bash
 cp .env.example .env     # แล้วใส่ key (ไม่ใส่ก็รันได้)
-node server.js           # ต้องใช้ Node 18 ขึ้นไป ไม่ต้อง npm install
+npm install              # ติดตั้ง h3-js (ใช้ย่อข้อมูล GISTDA)
+node server.js           # Node 20 ขึ้นไป
 ```
 
 เปิด http://localhost:3000

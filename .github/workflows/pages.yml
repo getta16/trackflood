@@ -28,6 +28,15 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+      - run: npm ci
+      # น้ำท่วมซ้ำซากเป็นข้อมูลรายปี เก็บ cache ไว้ ไม่ต้องดึงใหม่ทุกรอบ
+      - uses: actions/cache@v4
+        with:
+          path: |
+            public/data/gistda/flood-freq.json
+            public/data/gistda/flood-freq-summary.json
+          key: gistda-freq-${{ github.run_id }}
+          restore-keys: gistda-freq-
       - name: Fetch GISTDA data
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
