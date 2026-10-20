@@ -13,7 +13,7 @@ const RIVER_POINTS = [
 ];
 const REFRESH_MS = 10 * 60 * 1000;
 
-let cfg, map, wlLayer, rainLayer, floodLayer, radarLayer;
+let cfg, map, wlLayer, rainLayer, floodLayer, radarLayer, freqLayer, hyacinthLayer, floodTiles;
 let wlChart, rainChart, qChart;
 let stations = [];
 let selectedId = null;
@@ -45,7 +45,16 @@ async function staticApi(path) {
   const u = new URL(path, location.href);
   const p = u.pathname.replace(/^.*\/api\//, '');
   const TF = window.TrackFlood;
-  if (p === 'config') return { ...TF.SETTINGS, hasGistda: false, static: true };
+  if (p === 'config') {
+    // ข้อมูล GISTDA ถูกดึงล่วงหน้าโดย GitHub Actions ไว้ที่ data/gistda/
+    const meta = await fetchJson('data/gistda/meta.json').catch(() => null);
+    return { ...TF.SETTINGS, static: true, hasGistda: !!meta, gistdaUpdated: meta?.updated };
+  }
+  if (p.startsWith('gistda/')) {
+    const name = p.slice(7);
+    if (!TF.GISTDA.datasets[name]) throw new Error('ไม่รู้จักชุดข้อมูล ' + name);
+    return fetchJson(`data/gistda/${name}.json`);
+  }
   if (p === 'waterlevel') return { data: TF.parseWaterLevels(await fetchJson(TF.URLS.waterlevel), cfg) };
   if (p === 'rain') return { data: TF.parseRain(await fetchJson(TF.URLS.rain), cfg) };
   if (p === 'dams') return { data: TF.parseDams(await fetchJson(TF.URLS.main)) };
@@ -94,11 +103,19 @@ function initMap() {
 
   wlLayer = L.layerGroup().addTo(map);
   rainLayer = L.layerGroup().addTo(map);
-  floodLayer = L.geoJSON(null, {
-    style: { color: '#ff6b00', weight: 0.5, fillColor: '#ff6b00', fillOpacity: 0.55 },
-    onEachFeature: (f, layer) => layer.bindPopup(propsTable(f.properties)),
-  }).addTo(map);
+  const gistdaLayer = (title, color, opacity) => L.geoJSON(null, {
+    style: { color, weight: 0.5, fillColor: color, fillOpacity: opacity },
+    pointToLayer: (f, ll) => L.circleMarker(ll, { radius: 5, color, fillColor: color, fillOpacity: 0.8, weight: 1 }),
+    onEachFeature: (f, layer) => layer.bindPopup(propsTable(title, f)),
+  });
+  floodLayer = gistdaLayer('พื้นที่น้ำท่วม (GISTDA)', '#ff6b00', 0.55).addTo(map);
+  freqLayer = gistdaLayer('พื้นที่น้ำท่วมซ้ำซาก (GISTDA)', '#ae3ec9', 0.35);
+  hyacinthLayer = gistdaLayer('ผักตบชวา / สิ่งกีดขวางทางน้ำ (GISTDA)', '#2b8a3e', 0.7);
   radarLayer = L.layerGroup();
+  // tile ภาพน้ำท่วมทั้งประเทศ ใช้ได้เฉพาะตอนรันผ่าน server.js (ต้องแนบ key)
+  floodTiles = cfg.hasGistda && !cfg.static
+    ? L.tileLayer('api/gistda/tms/7days/{z}/{x}/{y}', { opacity: 0.8, attribution: 'Flood &copy; GISTDA' })
+    : null;
 
   L.circle([cfg.center.lat, cfg.center.lon], {
     radius: cfg.radiusKm * 1000, color: '#0b6bcb', weight: 1.5, dashArray: '6 6', fill: false, interactive: false,
@@ -110,18 +127,27 @@ function initMap() {
     'ระดับน้ำ (สสน.)': wlLayer,
     'ฝน 24 ชม. (สสน.)': rainLayer,
     'น้ำท่วมจากดาวเทียม (GISTDA)': floodLayer,
+    ...(floodTiles ? { 'น้ำท่วมทั้งประเทศ แบบภาพ (GISTDA)': floodTiles } : {}),
+    'น้ำท่วมซ้ำซาก (GISTDA)': freqLayer,
+    'ผักตบชวา (GISTDA)': hyacinthLayer,
     'เรดาร์ฝนล่าสุด (RainViewer)': radarLayer,
   }, { collapsed: window.innerWidth < 900 }).addTo(map);
 
-  map.on('overlayadd', (e) => { if (e.layer === radarLayer) loadRadar(); });
+  map.on('overlayadd', (e) => {
+    if (e.layer === radarLayer) loadRadar();
+    if (e.layer === freqLayer) loadGistdaOnce(freqLayer, 'flood-freq');
+    if (e.layer === hyacinthLayer) loadGistdaOnce(hyacinthLayer, 'water_hyacinth');
+    if (e.layer === floodTiles) floodTiles.setUrl(`api/gistda/tms/${$('#gistda-period').value}/{z}/{x}/{y}`);
+  });
 }
 
-function propsTable(p) {
-  const rows = Object.entries(p || {})
+function propsTable(title, f) {
+  const rai = window.TrackFlood.areaM2(f.geometry) / 1600;
+  const rows = Object.entries(f.properties || {})
     .filter(([k, v]) => v !== null && typeof v !== 'object' && !/^_/.test(k))
     .slice(0, 14)
     .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('');
-  return `<b>พื้นที่น้ำท่วม (GISTDA)</b><table>${rows}</table>`;
+  return `<b>${esc(title)}</b>${rai ? ` · ประมาณ ${fmt(rai, 1)} ไร่` : ''}<table>${rows}</table>`;
 }
 
 async function loadRadar() {
@@ -244,25 +270,39 @@ async function loadRain() {
 async function loadFlood() {
   floodLayer.clearLayers();
   if (!cfg.hasGistda) {
-    setKpi('#kpi-flood', 'ไม่มี key', cfg.static ? 'ดูได้เมื่อรันผ่าน server.js พร้อม GISTDA_API_KEY' : 'ใส่ GISTDA_API_KEY ในไฟล์ .env');
+    setKpi('#kpi-flood', 'ไม่มี key', cfg.static ? 'ตั้ง GISTDA_API_KEY ใน GitHub Secrets' : 'ใส่ GISTDA_API_KEY ในไฟล์ .env');
     return null;
   }
   const period = $('#gistda-period').value;
   setKpi('#kpi-flood', '…', 'กำลังโหลด');
   try {
-    const fc = await api(`api/gistda/flood?period=${period}`);
+    const fc = await api(`api/gistda/${period}`);
     floodLayer.addData(fc);
-    const areaKey = (p) => p.area_rai ?? p.rai ?? null;
-    const raiTotal = fc.features.reduce((s, f) => s + (Number(areaKey(f.properties || {})) || 0), 0);
+    if (floodTiles) floodTiles.setUrl(`api/gistda/tms/${period}/{z}/{x}/{y}`);
+    const rai = fc.features.reduce((s, f) => s + window.TrackFlood.areaM2(f.geometry), 0) / 1600;
     const label = $('#gistda-period').selectedOptions[0].textContent;
+    const when = fc.updated || cfg.gistdaUpdated;
     setKpi('#kpi-flood',
-      raiTotal ? `${Math.round(raiTotal).toLocaleString('th-TH')} ไร่` : `${fc.features.length.toLocaleString('th-TH')} แปลง`,
-      `จ.${cfg.province} ย้อนหลัง ${label}`,
+      `${Math.round(rai).toLocaleString('th-TH')} ไร่`,
+      `จ.${cfg.province} ย้อนหลัง ${label} · ${fc.features.length.toLocaleString('th-TH')} แปลง` +
+        (when ? ` · ดึงเมื่อ ${new Date(when).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}` : ''),
       fc.features.length ? '#ff6b00' : LEVELS[3].color);
-    return { total: fc.features.length };
+    return { total: fc.features.length, rai };
   } catch (e) {
     setKpi('#kpi-flood', 'ผิดพลาด', e.message, '#868e96');
     return null;
+  }
+}
+
+const gistdaLoaded = new Set();
+async function loadGistdaOnce(layer, name) {
+  if (!cfg.hasGistda || gistdaLoaded.has(name)) return;
+  gistdaLoaded.add(name);
+  try {
+    layer.addData(await api(`api/gistda/${name}`));
+  } catch (e) {
+    gistdaLoaded.delete(name);
+    console.warn(name, e);
   }
 }
 
@@ -341,7 +381,7 @@ function overall({ wl, rain, fc, flood }) {
   const localRain = Math.max(0, ...(rain || []).map((r) => r.rain24h || 0));
   let level = 0;
   const reasons = [];
-  if (flood?.total) { level = Math.max(level, 2); reasons.push(`ดาวเทียมพบพื้นที่น้ำท่วม ${flood.total} แปลง`); }
+  if (flood?.total) { level = Math.max(level, 2); reasons.push(`ดาวเทียมพบน้ำท่วม ~${Math.round(flood.rai).toLocaleString('th-TH')} ไร่`); }
   if (near) { level = Math.max(level, near >= 3 ? 3 : 2); reasons.push(`สถานีในจังหวัดล้นตลิ่ง ${near} แห่ง`); }
   else if (wl?.high?.length) { level = Math.max(level, 1); reasons.push(`สถานีน้ำมาก ${wl.high.length} แห่ง`); }
   if (localRain >= 90) { level = Math.max(level, 3); reasons.push('ฝนหนักมากใน 24 ชม.'); }

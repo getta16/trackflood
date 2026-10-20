@@ -21,7 +21,6 @@ const LONGDO_API_KEY = process.env.LONGDO_API_KEY || '';
 
 const TF = require('./public/shared');
 const CFG = { ...TF.SETTINGS, radiusKm: Number(process.env.RADIUS_KM || TF.SETTINGS.radiusKm) };
-const GISTDA = 'https://api-gateway.gistda.or.th/api/2.0/resources/features/flood';
 
 // ---------- cache ----------
 const cache = new Map();
@@ -52,31 +51,28 @@ async function waterLevelGraph(stationId, days) {
   return TF.parseGraph(await cached(url, 10 * 60e3, () => getJson(url)));
 }
 
-// ---------- GISTDA: พื้นที่น้ำท่วมจากดาวเทียม ----------
-const GISTDA_PERIODS = ['1day', '3days', '7days', '30days'];
-async function gistdaFlood(period) {
-  if (!GISTDA_API_KEY) {
-    const e = new Error('ยังไม่ได้ตั้งค่า GISTDA_API_KEY ในไฟล์ .env');
-    e.status = 503;
-    throw e;
-  }
-  return cached('gistda:' + period, 30 * 60e3, async () => {
-    const features = [];
-    const limit = 1000;
-    for (let offset = 0; offset < 20000; offset += limit) {
-      const url = `${GISTDA}/${period}?pv_idn=${CFG.provinceCode}&limit=${limit}&offset=${offset}`;
-      const j = await getJson(url, { 'API-Key': GISTDA_API_KEY });
-      const page = j.features || [];
-      for (const f of page) {
-        // ตัด links / ค่าที่อาจมี key ปนออก
-        const p = { ...(f.properties || {}) };
-        delete p.links;
-        features.push({ type: 'Feature', geometry: f.geometry, properties: p });
-      }
-      if (page.length < limit) break;
-    }
-    return { type: 'FeatureCollection', period, features };
+// ---------- GISTDA Disaster Platform ----------
+function needGistdaKey() {
+  if (GISTDA_API_KEY) return;
+  const e = new Error('ยังไม่ได้ตั้งค่า GISTDA_API_KEY ในไฟล์ .env');
+  e.status = 503;
+  throw e;
+}
+async function gistdaFeatures(name) {
+  needGistdaKey();
+  return cached('gistda:' + name, 30 * 60e3, () => TF.fetchGistda(name, CFG, GISTDA_API_KEY));
+}
+
+// ส่งต่อ tile ภาพ (TMS) โดยแนบ API-Key ฝั่ง server
+async function gistdaTile(res, layer, z, x, y) {
+  needGistdaKey();
+  const tilePath = layer === 'flood-freq' ? 'maps/flood-freq' : `maps/flood/${layer}`;
+  const r = await fetch(`${TF.GISTDA.base}/${tilePath}/tms/${z}/${x}/${y}`, {
+    headers: { 'API-Key': GISTDA_API_KEY }, signal: AbortSignal.timeout(30000),
   });
+  if (!r.ok) { res.writeHead(r.status === 404 ? 404 : 502); return res.end(); }
+  res.writeHead(200, { 'Content-Type': r.headers.get('content-type') || 'image/png', 'Cache-Control': 'public, max-age=1800' });
+  res.end(Buffer.from(await r.arrayBuffer()));
 }
 
 // ---------- HTTP ----------
@@ -106,15 +102,19 @@ async function handleApi(url, res) {
       if (!/^\d+$/.test(id || '')) return send(res, 400, { error: 'id ไม่ถูกต้อง' });
       return send(res, 200, { data: await waterLevelGraph(id, days) });
     }
-    if (p === '/api/gistda/flood') {
-      const period = url.searchParams.get('period') || '7days';
-      if (!GISTDA_PERIODS.includes(period)) return send(res, 400, { error: 'period ต้องเป็น ' + GISTDA_PERIODS.join(', ') });
-      return send(res, 200, await gistdaFlood(period));
+    let m;
+    if ((m = p.match(/^\/api\/gistda\/tms\/([\w-]+)\/(\d+)\/(\d+)\/(\d+)$/))) {
+      if (!TF.GISTDA.tmsLayers.includes(m[1])) return send(res, 400, { error: 'layer ไม่ถูกต้อง' });
+      return await gistdaTile(res, m[1], m[2], m[3], m[4]);
+    }
+    if ((m = p.match(/^\/api\/gistda\/([\w-]+)$/))) {
+      if (!TF.GISTDA.datasets[m[1]]) return send(res, 400, { error: 'ชุดข้อมูลต้องเป็น ' + Object.keys(TF.GISTDA.datasets).join(', ') });
+      return send(res, 200, { updated: new Date().toISOString(), ...(await gistdaFeatures(m[1])) });
     }
     send(res, 404, { error: 'not found' });
   } catch (e) {
     console.error(p, e.message);
-    send(res, e.status && e.status < 600 ? (e.status === 503 ? 503 : 502) : 502, { error: e.message });
+    send(res, e.status === 503 ? 503 : 502, { error: e.message });
   }
 }
 

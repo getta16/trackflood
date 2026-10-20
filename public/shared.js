@@ -124,5 +124,73 @@
     return (j.data?.graph_data || []).map((p) => ({ t: p.datetime, v: p.value }));
   }
 
-  return { SETTINGS, URLS, parseWaterLevels, parseRain, parseDams, parseGraph };
+  // ---------- GISTDA Disaster Platform (ต้องใช้ API-Key ใน header) ----------
+  // เอกสาร: https://disaster.gistda.or.th/services/open-api
+  const GISTDA = {
+    base: 'https://api-gateway.gistda.or.th/api/2.0/resources',
+    // by: 'province' = กรองด้วย pv_idn, 'bbox' = กรองด้วยกรอบพื้นที่จังหวัด
+    datasets: {
+      '1day': { path: 'features/flood/1day', by: 'province', label: 'พื้นที่น้ำท่วม 1 วัน' },
+      '3days': { path: 'features/flood/3days', by: 'province', label: 'พื้นที่น้ำท่วม 3 วัน' },
+      '7days': { path: 'features/flood/7days', by: 'province', label: 'พื้นที่น้ำท่วม 7 วัน' },
+      '30days': { path: 'features/flood/30days', by: 'province', label: 'พื้นที่น้ำท่วม 30 วัน' },
+      'flood-freq': { path: 'features/flood-freq', by: 'province', label: 'พื้นที่น้ำท่วมซ้ำซาก' },
+      'water_hyacinth': { path: 'features/water_hyacinth', by: 'bbox', label: 'สิ่งกีดขวางทางน้ำ (ผักตบชวา)' },
+    },
+    // กรอบพื้นที่ จ.กำแพงเพชร (minLon, minLat, maxLon, maxLat)
+    bbox: [98.9, 15.75, 100.15, 17.05],
+    tmsLayers: ['1day', '3days', '7days', '30days', 'flood-freq'],
+  };
+
+  // ดึงข้อมูลทุกหน้า (limit/offset) ใช้ใน server.js และ scripts/fetch-gistda.js
+  async function fetchGistda(name, cfg, apiKey) {
+    const ds = GISTDA.datasets[name];
+    if (!ds) throw new Error('ไม่รู้จักชุดข้อมูล ' + name);
+    const features = [];
+    const limit = 1000;
+    for (let offset = 0; offset < 50000; offset += limit) {
+      const q = new URLSearchParams({ limit, offset });
+      if (ds.by === 'province') q.set('pv_idn', cfg.provinceCode);
+      else q.set('bbox', GISTDA.bbox.join(','));
+      const res = await fetch(`${GISTDA.base}/${ds.path}?${q}`, {
+        headers: { 'API-Key': apiKey, Accept: 'application/json' },
+        signal: AbortSignal.timeout(60000),
+      });
+      if (res.status === 404) break; // ไม่พบข้อมูล
+      if (!res.ok) {
+        const err = new Error(`GISTDA ${name}: HTTP ${res.status}`);
+        err.status = res.status;
+        throw err;
+      }
+      const j = await res.json();
+      const page = j.features || [];
+      for (const f of page) {
+        // ตัด links ทิ้ง เพราะ gateway แนบ key มาใน url
+        const p = { ...(f.properties || {}) };
+        delete p.links;
+        features.push({ type: 'Feature', geometry: f.geometry, properties: p });
+      }
+      if (page.length < limit) break;
+    }
+    return { type: 'FeatureCollection', dataset: name, features };
+  }
+
+  // พื้นที่ (ตร.ม.) ของ Polygon/MultiPolygon แบบประมาณบนทรงกลม
+  function areaM2(geometry) {
+    const R = 6378137, rad = Math.PI / 180;
+    const ring = (c) => {
+      let s = 0;
+      for (let i = 0; i < c.length - 1; i++) {
+        s += (c[i + 1][0] - c[i][0]) * rad * (2 + Math.sin(c[i][1] * rad) + Math.sin(c[i + 1][1] * rad));
+      }
+      return Math.abs((s * R * R) / 2);
+    };
+    const poly = (p) => p.reduce((a, r, i) => a + (i === 0 ? ring(r) : -ring(r)), 0);
+    if (!geometry) return 0;
+    if (geometry.type === 'Polygon') return poly(geometry.coordinates);
+    if (geometry.type === 'MultiPolygon') return geometry.coordinates.reduce((a, p) => a + poly(p), 0);
+    return 0;
+  }
+
+  return { SETTINGS, URLS, GISTDA, parseWaterLevels, parseRain, parseDams, parseGraph, fetchGistda, areaM2 };
 });

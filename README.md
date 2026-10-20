@@ -18,7 +18,10 @@ node server.js           # ต้องใช้ Node 18 ขึ้นไป ไ�
 | ระดับน้ำ telemetry, สถานะตลิ่ง, กราฟย้อนหลัง | สสน. ThaiWater `api-v3.thaiwater.net` | ไม่ต้อง |
 | ฝน 24 ชม. รายสถานี | สสน. ThaiWater | ไม่ต้อง |
 | เขื่อน (ภูมิพล, แม่งัด, แม่กวง, สิริกิติ์ ฯลฯ) | สสน. ThaiWater | ไม่ต้อง |
-| พื้นที่น้ำท่วมจากดาวเทียม 1/3/7/30 วัน | GISTDA API Gateway `/features/flood/{period}?pv_idn=62` | `GISTDA_API_KEY` |
+| พื้นที่น้ำท่วมจากดาวเทียม 1/3/7/30 วัน | GISTDA `/features/flood/{period}?pv_idn=62` | `GISTDA_API_KEY` |
+| พื้นที่น้ำท่วมซ้ำซาก | GISTDA `/features/flood-freq?pv_idn=62` | `GISTDA_API_KEY` |
+| ผักตบชวา (สิ่งกีดขวางทางน้ำ) | GISTDA `/features/water_hyacinth?bbox=...` | `GISTDA_API_KEY` |
+| ภาพน้ำท่วมทั้งประเทศ (TMS, เฉพาะโหมด server) | GISTDA `/maps/flood/{period}/tms/{z}/{x}/{y}` | `GISTDA_API_KEY` |
 | แผนที่ฐาน | Longdo Map (tile) หรือ OSM/Esri ถ้าไม่มี key | `LONGDO_API_KEY` |
 | ฝนคาดการณ์ 10 วัน | Open-Meteo | ไม่ต้อง |
 | ปริมาณน้ำไหลแม่น้ำปิง (คาดการณ์) | Open-Meteo Flood API (GloFAS) | ไม่ต้อง |
@@ -35,6 +38,10 @@ node server.js           # ต้องใช้ Node 18 ขึ้นไป ไ�
 
 ทุกครั้งที่ push เข้า `main` GitHub Actions (`.github/workflows/pages.yml`) จะเผยแพร่โฟลเดอร์ `public/` ขึ้น GitHub Pages ให้อัตโนมัติ
 
-บน Pages ไม่มี `server.js` หน้าเว็บจึงทำงานแบบ static โดยเรียก ThaiWater, Open-Meteo และ RainViewer ตรงจากเบราว์เซอร์ ส่วนชั้นน้ำท่วมจากดาวเทียม GISTDA จะปิดไว้ เพราะ key จะหลุดไปฝั่งผู้ใช้ ถ้าต้องการ GISTDA ให้รัน `server.js` บนโฮสต์ที่รัน Node ได้ (เช่น Render)
+บน Pages ไม่มี `server.js` หน้าเว็บจึงเรียก ThaiWater, Open-Meteo และ RainViewer ตรงจากเบราว์เซอร์
+
+ข้อมูล GISTDA ใช้ key จึงให้ GitHub Actions ดึงล่วงหน้าทุก 3 ชั่วโมง (`scripts/fetch-gistda.js`) แล้วเก็บเป็นไฟล์ `data/gistda/*.json` ไปกับเว็บ key อยู่ใน GitHub Secret ไม่หลุดไปที่หน้าเว็บ
+
+ตั้งค่า key: GitHub repo → Settings → Secrets and variables → Actions → New repository secret ชื่อ `GISTDA_API_KEY` (สมัคร key ที่ https://disaster.gistda.or.th/services/open-api → ไปยังหน้าจัดการ API Key) แล้วสั่ง Actions → Deploy to GitHub Pages → Run workflow
 
 ค่าพื้นที่ (จุดศูนย์กลาง, รหัสจังหวัด, รัศมี) และ Longdo key สำหรับโหมด static ตั้งใน `public/shared.js`
