@@ -1,0 +1,113 @@
+:root {
+  --bg: #f4f6f8;
+  --card: #ffffff;
+  --ink: #17212b;
+  --muted: #5d6b78;
+  --line: #e1e6eb;
+  --accent: #0b6bcb;
+  --lv5: #e03131;
+  --lv4: #1c5fd6;
+  --lv3: #2f9e44;
+  --lv2: #f2b705;
+  --lv1: #8a1c1c;
+  --rain: #7048e8;
+  --flood: #ff6b00;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1419;
+    --card: #182028;
+    --ink: #e6edf3;
+    --muted: #93a1ae;
+    --line: #2a3540;
+    --accent: #4dabf7;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+}
+a { color: var(--accent); }
+.top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 20px; border-bottom: 1px solid var(--line); background: var(--card);
+}
+h1 { font-size: 1.35rem; margin: 0; }
+h2 { font-size: 1rem; margin: 0; }
+.sub { margin: 4px 0 0; color: var(--muted); font-size: .85rem; }
+.btn {
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  padding: 8px 14px; border-radius: 8px; font: inherit; cursor: pointer;
+}
+.btn:hover { border-color: var(--accent); }
+
+.kpis {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px; padding: 16px 20px 0;
+}
+.kpi {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; box-shadow: var(--shadow);
+  border-left: 5px solid var(--line);
+}
+.kpi .lbl { color: var(--muted); font-size: .8rem; }
+.kpi .val { font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+.kpi .note { color: var(--muted); font-size: .78rem; }
+
+.grid {
+  display: grid; grid-template-columns: 2fr 1fr; gap: 12px; padding: 12px 20px 20px;
+}
+.card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px; box-shadow: var(--shadow); min-width: 0;
+}
+.card.wide { grid-column: 1 / -1; }
+.card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.ctl { font-size: .85rem; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+select { font: inherit; padding: 3px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+
+#map { height: 520px; border-radius: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; font-size: .8rem; color: var(--muted); }
+.legend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.legend i.sq { border-radius: 2px; }
+
+.list { max-height: 560px; overflow: auto; }
+.st {
+  display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center;
+  padding: 8px 6px; border-bottom: 1px solid var(--line); cursor: pointer; border-radius: 6px;
+}
+.st:hover, .st.active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.st .dot { width: 10px; height: 10px; border-radius: 50%; }
+.st .name { font-weight: 600; }
+.st .meta { color: var(--muted); font-size: .78rem; }
+.st .wl { text-align: right; font-variant-numeric: tabular-nums; }
+.st .wl small { display: block; font-size: .75rem; }
+.up { color: var(--lv5); } .down { color: var(--lv3); }
+
+.chart { position: relative; height: 260px; }
+.hint { color: var(--muted); font-size: .78rem; margin: 6px 0 0; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .88rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { color: var(--muted); font-weight: 500; }
+td.num, th.num { text-align: right; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; width: 80px; display: inline-block; vertical-align: middle; margin-left: 6px; overflow: hidden; }
+.bar b { display: block; height: 100%; }
+
+footer { padding: 16px 20px 28px; color: var(--muted); font-size: .8rem; line-height: 1.7; }
+.leaflet-popup-content { font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; font-size: 13px; }
+.leaflet-popup-content table td { padding: 2px 6px; border: 0; }
+
+@media (max-width: 900px) {
+  .grid { grid-template-columns: 1fr; }
+  #map { height: 420px; }
+  .top, .kpis, .grid { padding-left: 16px; padding-right: 16px; }
+  .top { flex-wrap: wrap; }
+}

@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>สถานการณ์น้ำ กำแพงเพชร</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>สถานการณ์น้ำ จังหวัดกำแพงเพชร</h1>
+      <p class="sub">ข้อมูลจาก สสน. (ThaiWater), GISTDA, Longdo Map, Open-Meteo, RainViewer · <span id="updated">กำลังโหลด…</span></p>
+    </div>
+    <button id="refresh" class="btn">รีเฟรช</button>
+  </header>
+
+  <section class="kpis">
+    <div class="kpi" id="kpi-status"><span class="lbl">ภาพรวม</span><b class="val">–</b><span class="note"></span></div>
+    <div class="kpi" id="kpi-rain"><span class="lbl">ฝน 24 ชม. สูงสุดในจังหวัด</span><b class="val">–</b><span class="note"></span></div>
+    <div class="kpi" id="kpi-overflow"><span class="lbl">สถานีล้นตลิ่งในจังหวัด</span><b class="val">–</b><span class="note"></span></div>
+    <div class="kpi" id="kpi-flood"><span class="lbl">พื้นที่น้ำท่วมจากดาวเทียม (GISTDA)</span><b class="val">–</b><span class="note"></span></div>
+    <div class="kpi" id="kpi-forecast"><span class="lbl">ฝนคาดการณ์ 7 วัน</span><b class="val">–</b><span class="note"></span></div>
+  </section>
+
+  <main class="grid">
+    <section class="card map-card">
+      <div class="card-head">
+        <h2>แผนที่</h2>
+        <label class="ctl">น้ำท่วม GISTDA
+          <select id="gistda-period">
+            <option value="1day">1 วัน</option>
+            <option value="3days">3 วัน</option>
+            <option value="7days" selected>7 วัน</option>
+            <option value="30days">30 วัน</option>
+          </select>
+        </label>
+      </div>
+      <div id="map"></div>
+      <div class="legend">
+        <span><i style="background:var(--lv5)"></i>ล้นตลิ่ง</span>
+        <span><i style="background:var(--lv4)"></i>น้ำมาก</span>
+        <span><i style="background:var(--lv3)"></i>ปกติ</span>
+        <span><i style="background:var(--lv2)"></i>น้ำน้อย</span>
+        <span><i style="background:var(--lv1)"></i>น้อยวิกฤต</span>
+        <span><i class="sq" style="background:var(--rain)"></i>ฝน 24 ชม.</span>
+        <span><i class="sq" style="background:var(--flood)"></i>น้ำท่วม (ดาวเทียม)</span>
+      </div>
+    </section>
+
+    <section class="card list-card">
+      <div class="card-head"><h2>สถานีระดับน้ำ (ในจังหวัด + รัศมี <span class="r">70</span> กม.)</h2></div>
+      <div id="stations" class="list"></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2 id="graph-title">ระดับน้ำย้อนหลัง 7 วัน</h2></div>
+      <div class="chart"><canvas id="wl-chart"></canvas></div>
+      <p class="hint" id="graph-hint">คลิกสถานีในรายการหรือบนแผนที่เพื่อดูกราฟ</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>ฝนคาดการณ์รายวัน (ตัวเมืองกำแพงเพชร)</h2></div>
+      <div class="chart"><canvas id="rain-chart"></canvas></div>
+      <p class="hint">แบบจำลอง Open-Meteo (มม./วัน) · เส้น = โอกาสฝนตกสูงสุด (%)</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>ปริมาณน้ำไหลแม่น้ำปิง (คาดการณ์)</h2></div>
+      <div class="chart"><canvas id="q-chart"></canvas></div>
+      <p class="hint">แบบจำลอง GloFAS ผ่าน Open-Meteo (ลบ.ม./วินาที) ใช้ดูแนวโน้ม ไม่ใช่ค่าตรวจวัด</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>เขื่อนต้นน้ำที่เกี่ยวข้อง</h2></div>
+      <div class="table-wrap"><table id="dams"><thead><tr><th>เขื่อน</th><th>% ความจุ</th><th>ไหลเข้า</th><th>ระบาย</th></tr></thead><tbody></tbody></table></div>
+      <p class="hint">ล้าน ลบ.ม./วัน · เขื่อนภูมิพล แม่งัด และแม่กวง อยู่ต้นน้ำปิงที่ไหลผ่านกำแพงเพชร</p>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h2>ฝน 24 ชม. สูงสุด 25 สถานี</h2></div>
+      <div class="table-wrap"><table id="rain-table"><thead><tr><th>สถานี</th><th>อำเภอ / จังหวัด</th><th>ระยะ (กม.)</th><th>ฝน (มม.)</th><th>เวลา</th><th>หน่วยงาน</th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </main>
+
+  <footer>
+    แหล่งข้อมูล: <a href="https://www.thaiwater.net" target="_blank" rel="noopener">คลังข้อมูลน้ำแห่งชาติ (สสน.)</a> ·
+    <a href="https://disaster.gistda.or.th" target="_blank" rel="noopener">GISTDA Disaster Platform</a> ·
+    <a href="https://map.longdo.com" target="_blank" rel="noopener">Longdo Map</a> ·
+    <a href="https://open-meteo.com" target="_blank" rel="noopener">Open-Meteo</a> ·
+    <a href="https://www.rainviewer.com" target="_blank" rel="noopener">RainViewer</a>
+    <br>ข้อมูลใช้เพื่อการติดตามเบื้องต้น ประกาศเตือนภัยทางการให้ยึดตาม ปภ. กรมชลประทาน และกรมอุตุนิยมวิทยา
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="shared.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
