@@ -373,8 +373,8 @@ async function loadDownloads() {
   const d = (s) => (s ? new Date(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '-');
   box.innerHTML = idx.items.map((it) => `
     <div class="dl-item">
-      <h3>พื้นที่น้ำท่วม ${esc(it.label)}</h3>
-      <div class="meta">${it.count.toLocaleString('th-TH')} แปลง · ${it.rai.toLocaleString('th-TH')} ไร่ · ภาพดาวเทียม ${d(it.from)} – ${d(it.to)}</div>
+      <h3>${esc(it.title || 'พื้นที่น้ำท่วม ' + it.label)}</h3>
+      <div class="meta">${it.count.toLocaleString('th-TH')} แปลง · ${it.rai.toLocaleString('th-TH')} ไร่ · ${it.years ? `ข้อมูลปี ${esc(it.years)}` : `ภาพดาวเทียม ${d(it.from)} – ${d(it.to)}`}</div>
       <div class="dl-btns">${it.files.map((f) => `
         <a class="btn dl" href="data/gistda/downloads/${encodeURIComponent(f.file)}" download>${esc(f.format)}<small>${mb(f.bytes)}</small></a>`).join('')}
       </div>

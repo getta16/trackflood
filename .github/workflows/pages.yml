@@ -29,14 +29,16 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
-      # น้ำท่วมซ้ำซากเป็นข้อมูลรายปี เก็บ cache ไว้ ไม่ต้องดึงใหม่ทุกรอบ
-      - uses: actions/cache@v4
+      # น้ำท่วมซ้ำซากเป็นข้อมูลรายปี เก็บ cache ไว้ (รวมไฟล์ดาวน์โหลด) ไม่ต้องดึงใหม่ทุกรอบ
+      - uses: actions/cache/restore@v4
         with:
           path: |
             public/data/gistda/flood-freq.json
             public/data/gistda/flood-freq-summary.json
-          key: gistda-freq-${{ github.run_id }}
-          restore-keys: gistda-freq-
+            public/data/gistda/downloads/freq-item.json
+            public/data/gistda/downloads/gistda_flood_freq_*
+          key: gistda-freq-v2-
+          restore-keys: gistda-freq-v2-
       - name: Fetch GISTDA data
         env:
           GISTDA_API_KEY: ${{ secrets.GISTDA_API_KEY }}
@@ -47,6 +49,17 @@ jobs:
             sudo apt-get update -qq && sudo apt-get install -y -qq gdal-bin zip > /dev/null
           fi
           node scripts/build-downloads.js
+      # บันทึก cache ใหม่เฉพาะเมื่อดึงน้ำท่วมซ้ำซากใหม่ (key เปลี่ยนตาม freq-item.json)
+      - if: hashFiles('public/data/gistda/downloads/freq-item.json') != ''
+        uses: actions/cache/save@v4
+        continue-on-error: true
+        with:
+          path: |
+            public/data/gistda/flood-freq.json
+            public/data/gistda/flood-freq-summary.json
+            public/data/gistda/downloads/freq-item.json
+            public/data/gistda/downloads/gistda_flood_freq_*
+          key: gistda-freq-v2-${{ hashFiles('public/data/gistda/downloads/freq-item.json') }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

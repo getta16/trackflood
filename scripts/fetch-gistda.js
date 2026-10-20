@@ -57,15 +57,26 @@ const write = (name, obj) => {
 
   // อายุดูจาก updated ในไฟล์ (เวลาไฟล์จะเปลี่ยนเมื่อ restore จาก cache)
   const freqFile = path.join(OUT, 'flood-freq-summary.json');
-  const s = fs.existsSync(freqFile) && fs.existsSync(path.join(OUT, 'flood-freq.json'))
+  // freq-item.json = ไฟล์ดาวน์โหลดที่ build-downloads.js สร้างไว้แล้ว (อยู่ใน cache ด้วย)
+  const s = fs.existsSync(freqFile) && fs.existsSync(path.join(OUT, 'flood-freq.json')) && fs.existsSync(path.join(DL, 'freq-item.json'))
     ? JSON.parse(fs.readFileSync(freqFile, 'utf8')) : null;
   const freqAge = s?.updated ? (Date.now() - Date.parse(s.updated)) / 86400e3 : Infinity;
   if (freqAge < FREQ_MAX_AGE_DAYS && !process.env.FORCE_FREQ) {
     meta.datasets['flood-freq'] = { ok: true, cached: true, count: s.mapCount };
     console.log(`flood-freq: ใช้ cache (อายุ ${freqAge.toFixed(1)} วัน)`);
   } else {
+    // ไฟล์ดาวน์โหลดเขียนทีละแปลง เพราะข้อมูลทั้งจังหวัดใหญ่มาก
+    const base = `gistda_flood_freq_${TF.SETTINGS.slug}`;
+    const rawFile = path.join(DL, `${base}.geojson`);
+    const fd = fs.openSync(rawFile, 'w');
+    fs.writeSync(fd, JSON.stringify({ type: 'FeatureCollection', name: base,
+      crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:OGC:1.3:CRS84' } } }).slice(0, -1) + ',"features":[\n');
+    let n = 0;
     try {
-      const { map, summary } = await fetchFloodFreq(TF.SETTINGS, KEY);
+      const { map, summary } = await fetchFloodFreq(TF.SETTINGS, KEY, (f) => fs.writeSync(fd, (n++ ? ',\n' : '') + JSON.stringify(f)));
+      fs.writeSync(fd, '\n]}\n');
+      fs.closeSync(fd);
+      console.log(`flood-freq ดาวน์โหลด: ${n} แปลง, ${(fs.statSync(rawFile).size / 1e6).toFixed(1)} MB`);
       summary.mapCount = map.features.length;
       summary.updated = meta.updated;
       const size = write('flood-freq', map);
@@ -73,6 +84,8 @@ const write = (name, obj) => {
       meta.datasets['flood-freq'] = { ok: true, count: map.features.length };
       console.log(`flood-freq: ${map.features.length} features (freq >= ${summary.freqMin}), ${size}; ${summary.amphoe.length} อำเภอ`);
     } catch (e) {
+      try { fs.closeSync(fd); } catch { /* ปิดไปแล้ว */ }
+      fs.rmSync(rawFile, { force: true });
       meta.datasets['flood-freq'] = { ok: false, error: e.message };
       console.error(`flood-freq: ${e.message}`);
     }
