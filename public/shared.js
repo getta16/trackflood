@@ -126,6 +126,39 @@
     return (j.data?.graph_data || []).map((p) => ({ t: p.datetime, v: p.value }));
   }
 
+  // ---------- Longdo Map ----------
+  // events: เหตุการณ์จราจร/ภัยพิบัติที่ยังไม่สิ้นสุดทั้งประเทศ ไม่ต้องใช้ key (type '6' = น้ำท่วม)
+  // weather: เรดาร์และฝนรายจุด/รายพื้นที่ ต้องใช้ key จาก https://map.longdo.com/console
+  const LONGDO = {
+    events: 'https://event.longdo.com/feed/json',
+    floodType: '6',
+    weather: 'https://weather.longdo.com/rain/api/v1',
+    tile: 'https://ms.longdo.com/mmmap/tile.php',
+  };
+
+  // รายงานน้ำท่วมจาก Longdo (ซ้ำกันหลายรายการ จึงรวมตามหัวข้อและพิกัด) เรียงตามระยะจากศูนย์กลาง
+  function parseLongdoFloods(list, cfg) {
+    const seen = new Set();
+    return (list || [])
+      .filter((e) => String(e.type) === LONGDO.floodType)
+      .map((e) => {
+        const lat = Number(e.latitude), lon = Number(e.longitude);
+        return {
+          id: e.eid, title: e.title, description: e.description, lat, lon,
+          start: e.start, stop: e.stop, contributor: e.contributor,
+          blocked: /ผ่านไม่ได้/.test(e.title || ''),
+          distanceKm: +distKm(cfg.center.lat, cfg.center.lon, lat, lon).toFixed(1),
+        };
+      })
+      .filter((e) => {
+        const k = `${e.title}|${e.lat.toFixed(4)}|${e.lon.toFixed(4)}`;
+        if (!Number.isFinite(e.lat) || seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      })
+      .sort((a, b) => a.distanceKm - b.distanceKm);
+  }
+
   // ---------- GISTDA Disaster Platform (ต้องใช้ API-Key ใน header) ----------
   // เอกสาร: https://disaster.gistda.or.th/services/open-api
   const GISTDA = {
@@ -137,7 +170,6 @@
       '7days': { path: 'features/flood/7days', by: 'province', label: 'พื้นที่น้ำท่วม 7 วัน' },
       '30days': { path: 'features/flood/30days', by: 'province', label: 'พื้นที่น้ำท่วม 30 วัน' },
       'flood-freq': { path: 'features/flood-freq', by: 'province', label: 'พื้นที่น้ำท่วมซ้ำซาก' },
-      'water_hyacinth': { path: 'features/water_hyacinth', by: 'bbox', label: 'สิ่งกีดขวางทางน้ำ (ผักตบชวา)' },
     },
     // กรอบพื้นที่ จ.กำแพงเพชร (minLon, minLat, maxLon, maxLat)
     bbox: [98.9, 15.75, 100.15, 17.05],
@@ -197,5 +229,5 @@
     return 0;
   }
 
-  return { SETTINGS, URLS, GISTDA, parseWaterLevels, parseRain, parseDams, parseGraph, fetchGistda, areaM2 };
+  return { SETTINGS, URLS, LONGDO, GISTDA, parseWaterLevels, parseRain, parseDams, parseGraph, parseLongdoFloods, fetchGistda, areaM2 };
 });

@@ -13,7 +13,7 @@ const RIVER_POINTS = [
 ];
 const REFRESH_MS = 10 * 60 * 1000;
 
-let cfg, map, wlLayer, rainLayer, floodLayer, radarLayer, freqLayer, hyacinthLayer, floodTiles;
+let cfg, map, wlLayer, rainLayer, floodLayer, radarLayer, freqLayer, floodTiles, longdoLayer, longdoRadar;
 let wlChart, rainChart, qChart;
 let stations = [];
 let selectedId = null;
@@ -96,6 +96,7 @@ function initMap() {
       { maxZoom: 20, attribution: '&copy; Longdo Map' });
     bases['Longdo Map'] = longdo('icons');
     bases['Longdo ภาพดาวเทียม'] = longdo('bluemarble_terrain');
+    bases['Longdo แหล่งน้ำ'] = longdo('hydro');
   }
   bases['OpenStreetMap'] = osm;
   bases['ภาพถ่ายดาวเทียม (Esri)'] = esri;
@@ -117,8 +118,14 @@ function initMap() {
     const n = f.properties.freq || 5;
     return { color: '#ae3ec9', weight: 0.4, fillColor: n >= 7 ? '#5f0f7a' : n >= 6 ? '#862e9c' : '#ae3ec9', fillOpacity: 0.6 };
   });
-  hyacinthLayer = gistdaLayer('ผักตบชวา / สิ่งกีดขวางทางน้ำ (GISTDA)', '#2b8a3e', 0.7);
   radarLayer = L.layerGroup();
+  longdoLayer = L.layerGroup().addTo(map);
+  // เรดาร์ Longdo ต้องใช้ key (มีไทล์ zoom 5–13)
+  longdoRadar = cfg.longdoKey
+    ? L.tileLayer(`${window.TrackFlood.LONGDO.weather}/layer/latest/{z}/{x}/{y}.png?key=${encodeURIComponent(cfg.longdoKey)}`, {
+      opacity: 0.7, minNativeZoom: 5, maxNativeZoom: 13, maxZoom: 19, attribution: 'Radar &copy; Longdo Weather',
+    })
+    : null;
   // tile ภาพน้ำท่วมทั้งประเทศ ใช้ได้เฉพาะตอนรันผ่าน server.js (ต้องแนบ key)
   floodTiles = cfg.hasGistda && !cfg.static
     ? L.tileLayer('api/gistda/tms/7days/{z}/{x}/{y}', { opacity: 0.8, attribution: 'Flood &copy; GISTDA' })
@@ -136,26 +143,26 @@ function initMap() {
     'น้ำท่วมจากดาวเทียม (GISTDA)': floodLayer,
     ...(floodTiles ? { 'น้ำท่วมทั้งประเทศ แบบภาพ (GISTDA)': floodTiles } : {}),
     'น้ำท่วมซ้ำซาก (GISTDA)': freqLayer,
-    'ผักตบชวา (GISTDA)': hyacinthLayer,
+    'รายงานน้ำท่วมถนน (Longdo)': longdoLayer,
+    ...(longdoRadar ? { 'เรดาร์ฝน (Longdo)': longdoRadar } : {}),
     'เรดาร์ฝนล่าสุด (RainViewer)': radarLayer,
   }, { collapsed: window.innerWidth < 900 }).addTo(map);
 
   map.on('overlayadd', (e) => {
     if (e.layer === radarLayer) loadRadar();
     if (e.layer === freqLayer) loadGistdaOnce(freqLayer, 'flood-freq');
-    if (e.layer === hyacinthLayer) loadGistdaOnce(hyacinthLayer, 'water_hyacinth');
     if (e.layer === floodTiles) floodTiles.setUrl(`api/gistda/tms/${$('#gistda-period').value}/{z}/{x}/{y}`);
   });
 }
 
 const PROP_LABELS = {
-  name: ['ชื่อลำน้ำ'], river: ['ลุ่มน้ำย่อย'], tb: ['ตำบล'], ap: ['อำเภอ'], pv: ['จังหวัด'],
+  tb: ['ตำบล'], ap: ['อำเภอ'],
   area_m2: ['พื้นที่ท่วม', (v) => `${fmt(v / 1600, 1)} ไร่`], area_rai: ['พื้นที่', (v) => `${fmt(v, 1)} ไร่`],
   freq: ['ท่วมซ้ำ', (v) => `${v} ปี (จาก 14 ปี)`], years: ['ปีที่ท่วม'],
   population: ['ประชากรโดยประมาณ', (v) => fmt(v, 0) + ' คน'], building: ['อาคาร'], school: ['โรงเรียน'], hospital: ['โรงพยาบาล'],
   road_m: ['ถนน', (v) => fmt(v / 1000, 2) + ' กม.'], rice_m2: ['นาข้าว', (v) => fmt(v / 1600, 1) + ' ไร่'],
   maize_m2: ['ข้าวโพด', (v) => fmt(v / 1600, 1) + ' ไร่'], cassava_m2: ['มันสำปะหลัง', (v) => fmt(v / 1600, 1) + ' ไร่'],
-  sugarcane_m2: ['อ้อย', (v) => fmt(v / 1600, 1) + ' ไร่'], image_date: ['ภาพดาวเทียมล่าสุด'], agency: ['หน่วยงาน'], image: ['ภาพที่ใช้'],
+  sugarcane_m2: ['อ้อย', (v) => fmt(v / 1600, 1) + ' ไร่'], image_date: ['ภาพดาวเทียมล่าสุด'],
 };
 function propsTable(title, f) {
   const rows = Object.entries(f.properties || {})
@@ -382,6 +389,68 @@ async function loadDownloads() {
   box.insertAdjacentHTML('beforeend', `<p class="hint" style="grid-column:1/-1;margin:0">สร้างไฟล์เมื่อ ${new Date(idx.updated).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} · อัปเดตทุก 3 ชั่วโมง</p>`);
 }
 
+// ---------------- Longdo Map ----------------
+// รายงานน้ำท่วมถนนจาก Longdo Traffic (ไม่ต้องใช้ key) แสดงทั้งประเทศบนแผนที่ ตารางเรียงตามระยะ
+async function loadLongdoFloods() {
+  const TF = window.TrackFlood;
+  let list;
+  try {
+    list = TF.parseLongdoFloods(await fetchJson(TF.LONGDO.events), cfg);
+  } catch (e) {
+    $('#longdo-floods-hint').textContent = 'โหลดรายงาน Longdo ไม่สำเร็จ: ' + e.message;
+    throw e;
+  }
+  longdoLayer.clearLayers();
+  for (const e of list) {
+    const c = e.blocked ? '#e03131' : '#1c7ed6';
+    L.circleMarker([e.lat, e.lon], { radius: 7, color: '#fff', weight: 1.5, fillColor: c, fillOpacity: 0.95 })
+      .addTo(longdoLayer)
+      .bindPopup(`<b>${esc(e.title)}</b><br>${esc(e.description || '').slice(0, 300)}<br>
+        <span class="hint">เริ่ม ${esc(e.start)} · ห่างตัวเมือง ${e.distanceKm} กม. · Longdo Traffic</span>`);
+  }
+  const near = list.filter((e) => e.distanceKm <= cfg.radiusKm);
+  const shown = near.length ? near : list.slice(0, 5);
+  $('#longdo-floods tbody').innerHTML = shown.map((e) => `<tr>
+    <td>${e.blocked ? '<b style="color:#e03131">ผ่านไม่ได้</b>' : 'ผ่านได้/ไม่ระบุ'}</td>
+    <td style="white-space:normal">${esc(e.title)}</td><td class="num">${e.distanceKm}</td><td>${esc(e.start)}</td></tr>`).join('')
+    || '<tr><td colspan="4" class="hint">ไม่มีรายงานน้ำท่วมในขณะนี้</td></tr>';
+  $('#longdo-floods-hint').textContent = near.length
+    ? `${near.length} รายงานในรัศมี ${cfg.radiusKm} กม. · ทั้งประเทศ ${list.length} รายงาน (จุดบนแผนที่)`
+    : `ไม่มีรายงานในรัศมี ${cfg.radiusKm} กม. · แสดง ${shown.length} รายงานที่ใกล้ที่สุดจากทั้งประเทศ ${list.length} รายงาน`;
+  return { near: near.length, blocked: near.filter((e) => e.blocked).length };
+}
+
+// ฝนตอนนี้และคาดการณ์ 15/30 นาที จาก Longdo Weather (ต้องใช้ key)
+const LONGDO_RAIN = ['ไม่มีฝน', 'ฝนเล็กน้อย', 'ฝนเล็กน้อย', 'ฝนปานกลาง', 'ฝนหนัก', 'ฝนหนักมาก'];
+async function loadLongdoRain() {
+  const box = $('#longdo-rain');
+  if (!cfg.longdoKey) {
+    box.innerHTML = '<p class="hint">ต้องใส่ Longdo key (ฟรีที่ map.longdo.com/console) ใน <code>public/shared.js</code> หรือ <code>LONGDO_API_KEY</code> ใน .env จึงจะแสดงฝนตอนนี้ เรดาร์ และแผนที่แหล่งน้ำของ Longdo</p>';
+    return null;
+  }
+  const W = window.TrackFlood.LONGDO.weather;
+  const q = `key=${encodeURIComponent(cfg.longdoKey)}&lat=${cfg.center.lat}&lon=${cfg.center.lon}&radius_km=${cfg.radiusKm}`;
+  try {
+    const [now, fc] = await Promise.all([fetchJson(`${W}/area?${q}`), fetchJson(`${W}/forecast/area?${q}`)]);
+    const row = (label, s) => {
+      if (!s) return `<tr><td>${label}</td><td colspan="3" class="hint">ไม่มีข้อมูล</td></tr>`;
+      const max = s.max_intensity ?? 0;
+      const c = max >= 4 ? '#e8590c' : max >= 2 ? '#7048e8' : max > 0 ? '#91a7ff' : 'var(--muted)';
+      return `<tr><td>${label}</td><td class="num">${fmt(s.rain_coverage_pct, 1)}%</td>
+        <td style="color:${c}"><b>${LONGDO_RAIN[max] || max}</b></td><td>${esc(s.dominant_level?.description || '')}</td></tr>`;
+    };
+    const t = (f) => new Date(f.forecast_time || f.unix_time * 1000).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+    box.innerHTML = `<div class="table-wrap"><table><thead><tr><th>เวลา</th><th class="num">พื้นที่มีฝน</th><th>ฝนแรงสุด</th><th>ส่วนใหญ่</th></tr></thead><tbody>
+      ${row('ตอนนี้', now.stats)}
+      ${(fc.forecast || []).map((f) => row(`${t(f)} น. (คาดการณ์)`, f.available === false ? null : f.stats)).join('')}
+    </tbody></table></div>`;
+    return now.stats;
+  } catch (e) {
+    box.innerHTML = `<p class="hint">โหลดข้อมูลฝน Longdo ไม่สำเร็จ: ${esc(e.message)}</p>`;
+    return null;
+  }
+}
+
 // ---------------- พยากรณ์ (Open-Meteo) ----------------
 async function loadForecast() {
   const { lat, lon } = cfg.center;
@@ -452,7 +521,7 @@ function drawChart(existing, sel, type, labels, datasets, opt = {}) {
 }
 
 // ---------------- ภาพรวม ----------------
-function overall({ wl, rain, fc, flood }) {
+function overall({ wl, rain, fc, flood, longdo }) {
   const near = wl?.nearOverflow?.length || 0;
   const localRain = Math.max(0, ...(rain || []).map((r) => r.rain24h || 0));
   let level = 0;
@@ -460,6 +529,10 @@ function overall({ wl, rain, fc, flood }) {
   if (flood?.total) { level = Math.max(level, 2); reasons.push(`ดาวเทียมพบน้ำท่วม ~${Math.round(flood.rai).toLocaleString('th-TH')} ไร่`); }
   if (near) { level = Math.max(level, near >= 3 ? 3 : 2); reasons.push(`สถานีในจังหวัดล้นตลิ่ง ${near} แห่ง`); }
   else if (wl?.high?.length) { level = Math.max(level, 1); reasons.push(`สถานีน้ำมาก ${wl.high.length} แห่ง`); }
+  if (longdo?.near) {
+    level = Math.max(level, longdo.blocked ? 2 : 1);
+    reasons.push(`รายงานน้ำท่วมถนน ${longdo.near} จุด` + (longdo.blocked ? ` (ผ่านไม่ได้ ${longdo.blocked})` : ''));
+  }
   if (localRain >= 90) { level = Math.max(level, 3); reasons.push('ฝนหนักมากใน 24 ชม.'); }
   else if (localRain >= 35) { level = Math.max(level, 2); reasons.push('ฝนหนักใน 24 ชม.'); }
   if (fc?.maxDay >= 35) { level = Math.max(level, 2); reasons.push('คาดการณ์ฝนหนักใน 7 วัน'); }
@@ -476,11 +549,11 @@ function overall({ wl, rain, fc, flood }) {
 async function refreshAll() {
   $('#updated').textContent = 'กำลังโหลด…';
   const settle = (p) => p.then((v) => v, (e) => { console.error(e); return null; });
-  const [wl, rain, fc, flood] = await Promise.all([
-    settle(loadWaterLevels()), settle(loadRain()), settle(loadForecast()), settle(loadFlood()),
-    settle(loadDischarge()), settle(loadDams()),
+  const [wl, rain, fc, flood, longdo] = await Promise.all([
+    settle(loadWaterLevels()), settle(loadRain()), settle(loadForecast()), settle(loadFlood()), settle(loadLongdoFloods()),
+    settle(loadDischarge()), settle(loadDams()), settle(loadLongdoRain()),
   ]);
-  last = { wl, rain, fc, flood };
+  last = { wl, rain, fc, flood, longdo };
   overall(last);
   if (map.hasLayer(radarLayer)) loadRadar();
   $('#updated').textContent = 'อัปเดต ' + new Date().toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' });

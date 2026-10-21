@@ -21,9 +21,10 @@ node server.js           # Node 20 ขึ้นไป
 | เขื่อน (ภูมิพล, แม่งัด, แม่กวง, สิริกิติ์ ฯลฯ) | สสน. ThaiWater | ไม่ต้อง |
 | พื้นที่น้ำท่วมจากดาวเทียม 1/3/7/30 วัน | GISTDA `/features/flood/{period}?pv_idn=62` | `GISTDA_API_KEY` |
 | พื้นที่น้ำท่วมซ้ำซาก | GISTDA `/features/flood-freq?pv_idn=62` | `GISTDA_API_KEY` |
-| ผักตบชวา (สิ่งกีดขวางทางน้ำ) | GISTDA `/features/water_hyacinth?bbox=...` | `GISTDA_API_KEY` |
 | ภาพน้ำท่วมทั้งประเทศ (TMS, เฉพาะโหมด server) | GISTDA `/maps/flood/{period}/tms/{z}/{x}/{y}` | `GISTDA_API_KEY` |
-| แผนที่ฐาน | Longdo Map (tile) หรือ OSM/Esri ถ้าไม่มี key | `LONGDO_API_KEY` |
+| รายงานน้ำท่วมถนน (เหตุการณ์ที่ยังไม่สิ้นสุด ทั้งประเทศ) | Longdo Traffic `event.longdo.com/feed/json` (type 6) | ไม่ต้อง |
+| ฝนตอนนี้ + คาดการณ์ 15/30 นาที, เรดาร์ฝน | Longdo Weather `weather.longdo.com/rain/api/v1/{area,forecast/area,layer}` | `LONGDO_API_KEY` |
+| แผนที่ฐาน (ปกติ, ดาวเทียม, แหล่งน้ำ) | Longdo Map (tile) หรือ OSM/Esri ถ้าไม่มี key | `LONGDO_API_KEY` |
 | ฝนคาดการณ์ 10 วัน | Open-Meteo | ไม่ต้อง |
 | ปริมาณน้ำไหลแม่น้ำปิง (คาดการณ์) | Open-Meteo Flood API (GloFAS) | ไม่ต้อง |
 | เรดาร์ฝน | RainViewer | ไม่ต้อง |
