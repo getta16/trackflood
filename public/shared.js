@@ -12,7 +12,7 @@
     province: 'กำแพงเพชร',
     // ใช้ตั้งชื่อไฟล์ดาวน์โหลด
     slug: 'kamphaengphet',
-    // Longdo key สำหรับโหมด static (ผูกกับ domain เช่น <user>.github.io) เว้นว่างได้
+    // Longdo key สำหรับโหมด static: เว้นว่างไว้ GitHub Actions ใส่จาก Secret LONGDO_API_KEY ตอน deploy
     longdoKey: '',
   };
 

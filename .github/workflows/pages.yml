@@ -60,6 +60,17 @@ jobs:
             public/data/gistda/downloads/freq-item.json
             public/data/gistda/downloads/gistda_flood_freq_*
           key: gistda-freq-v2-${{ hashFiles('public/data/gistda/downloads/freq-item.json') }}
+      # Longdo key ใช้ฝั่งเบราว์เซอร์ (จำกัดโดเมนไว้ใน Longdo console) ใส่ตอน deploy เพื่อไม่ให้อยู่ใน git
+      - name: Inject Longdo key
+        env:
+          LONGDO_API_KEY: ${{ secrets.LONGDO_API_KEY }}
+        run: |
+          if [ -n "$LONGDO_API_KEY" ]; then
+            sed -i "s/longdoKey: ''/longdoKey: '${LONGDO_API_KEY//[^A-Za-z0-9]/}'/" public/shared.js
+            grep -q "longdoKey: ''" public/shared.js && { echo "ใส่ Longdo key ไม่สำเร็จ"; exit 1; } || echo "ใส่ Longdo key แล้ว"
+          else
+            echo "ไม่มี LONGDO_API_KEY ใช้แผนที่ OSM และไม่มีข้อมูลฝน Longdo"
+          fi
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:

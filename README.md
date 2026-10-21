@@ -49,4 +49,4 @@ node server.js           # Node 20 ขึ้นไป
 หน้าเว็บมีปุ่มดาวน์โหลดพื้นที่น้ำท่วม 7 / 30 วัน เป็น GeoJSON, Shapefile และ KMZ ซึ่ง workflow สร้างด้วย GDAL (`scripts/build-downloads.js`) จากรูปทรงเดิมของ GISTDA
 สร้างไฟล์เองในเครื่อง: `GISTDA_API_KEY=xxx npm run fetch-gistda && node scripts/build-downloads.js` (Windows + QGIS ให้ตั้ง `OGR2OGR` เป็น path ของ ogr2ogr.exe)
 
-ค่าพื้นที่ (จุดศูนย์กลาง, รหัสจังหวัด, รัศมี) และ Longdo key สำหรับโหมด static ตั้งใน `public/shared.js`
+ค่าพื้นที่ (จุดศูนย์กลาง, รหัสจังหวัด, รัศมี) ตั้งใน `public/shared.js` · Longdo key ใส่เป็น GitHub Secret `LONGDO_API_KEY` (workflow ใส่ให้ตอน deploy) และผูกโดเมน `<user>.github.io` ใน Longdo console
