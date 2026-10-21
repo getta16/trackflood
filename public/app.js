@@ -131,11 +131,14 @@ function initMap() {
     ? L.tileLayer('api/gistda/tms/7days/{z}/{x}/{y}', { opacity: 0.8, attribution: 'Flood &copy; GISTDA' })
     : null;
 
-  L.circle([cfg.center.lat, cfg.center.lon], {
-    radius: cfg.radiusKm * 1000, color: '#0b6bcb', weight: 1.5, dashArray: '6 6', fill: false, interactive: false,
-  }).addTo(map);
-  L.marker([cfg.center.lat, cfg.center.lon], { title: 'ตัวเมืองกำแพงเพชร' })
-    .addTo(map).bindPopup('<b>อ.เมืองกำแพงเพชร</b><br>จ.กำแพงเพชร');
+  // ขอบเขตจังหวัด (เส้นประ) แล้วซูมให้พอดีจังหวัด
+  fetchJson('kpp_boundary.geojson').then((fc) => {
+    const b = L.geoJSON(fc, {
+      style: { color: '#0b6bcb', weight: 2, dashArray: '6 6', fill: false }, interactive: false,
+    }).addTo(map);
+    b.bringToBack();
+    map.fitBounds(b.getBounds(), { padding: [10, 10] });
+  }).catch((e) => console.warn('boundary', e));
 
   L.control.layers(bases, {
     'ระดับน้ำ (สสน.)': wlLayer,
