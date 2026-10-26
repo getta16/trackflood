@@ -29,6 +29,14 @@ node server.js           # Node 20 ขึ้นไป
 | ปริมาณน้ำไหลแม่น้ำปิง (คาดการณ์) | Open-Meteo Flood API (GloFAS) | ไม่ต้อง |
 | เรดาร์ฝน | RainViewer | ไม่ต้อง |
 
+### หน้าเว็บ
+
+เมนูด้านข้าง (กดปุ่ม ☰ เพื่อเปิด/ปิด) มี 3 หน้า: สถานการณ์น้ำ (`index.html`), สรุปอุทกภัยปี 2569 (`flood2569.html`) และดาวน์โหลดข้อมูล (`downloads.html`) รายการเมนูอยู่ใน `public/nav.js`
+
+### หน้าสรุปอุทกภัยปี 2569 (`flood2569.html`)
+
+สรุปเหตุการณ์ 18 ก.ย. – 12 ต.ค. 2569 จากรายงานสถานการณ์อุทกภัย 27 ฉบับของโครงการชลประทานกำแพงเพชร สำนักงานชลประทานที่ 4 กรมชลประทาน (สรุปเมื่อ 21 ต.ค. 2569) มีแผนที่จุดประสบภัย 18 จุด ระดับน้ำ ปริมาณน้ำไหล อ่างเก็บน้ำ ฝน และการช่วยเหลือ ข้อมูลอยู่ใน `public/flood2569-data.js` (แก้ไฟล์นี้ไฟล์เดียวเมื่อมีรายงานใหม่) พิกัดจุดเป็นค่าจาก OpenStreetMap ระดับหมู่บ้าน/ตำบล ไม่ใช่พิกัดจากกรมชลประทาน
+
 `server.js` เป็นตัวกลาง (proxy) ที่เรียก ThaiWater และ GISTDA พร้อม cache 10–30 นาที กรองสถานีในจังหวัด (รหัส 62) และจังหวัดข้างเคียงในรัศมี `RADIUS_KM` และเก็บ GISTDA key ไว้ฝั่ง server เท่านั้น
 
 ## หมายเหตุ
@@ -46,7 +54,7 @@ node server.js           # Node 20 ขึ้นไป
 
 ตั้งค่า key: GitHub repo → Settings → Secrets and variables → Actions → New repository secret ชื่อ `GISTDA_API_KEY` (สมัคร key ที่ https://disaster.gistda.or.th/services/open-api → ไปยังหน้าจัดการ API Key) แล้วสั่ง Actions → Deploy to GitHub Pages → Run workflow
 
-หน้าเว็บมีปุ่มดาวน์โหลดพื้นที่น้ำท่วม 7 / 30 วัน เป็น GeoJSON, Shapefile และ KMZ ซึ่ง workflow สร้างด้วย GDAL (`scripts/build-downloads.js`) จากรูปทรงเดิมของ GISTDA
+หน้าดาวน์โหลด (`downloads.html`) มีปุ่มดาวน์โหลดพื้นที่น้ำท่วม 7 / 30 วัน เป็น GeoJSON, Shapefile และ KMZ ซึ่ง workflow สร้างด้วย GDAL (`scripts/build-downloads.js`) จากรูปทรงเดิมของ GISTDA
 สร้างไฟล์เองในเครื่อง: `GISTDA_API_KEY=xxx npm run fetch-gistda && node scripts/build-downloads.js` (Windows + QGIS ให้ตั้ง `OGR2OGR` เป็น path ของ ogr2ogr.exe)
 
 ค่าพื้นที่ (จุดศูนย์กลาง, รหัสจังหวัด, รัศมี) ตั้งใน `public/shared.js` · Longdo key ใส่เป็น GitHub Secret `LONGDO_API_KEY` (workflow ใส่ให้ตอน deploy) และผูกโดเมน `<user>.github.io` ใน Longdo console

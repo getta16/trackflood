@@ -369,29 +369,6 @@ async function loadGistdaOnce(layer, name) {
   }
 }
 
-// ไฟล์ดาวน์โหลด สร้างโดย scripts/build-downloads.js ใน GitHub Actions
-async function loadDownloads() {
-  const box = $('#downloads');
-  let idx;
-  try {
-    idx = await fetchJson('data/gistda/downloads/index.json');
-  } catch {
-    box.innerHTML = '<p class="hint">ยังไม่มีไฟล์ดาวน์โหลด (ต้องตั้ง GISTDA_API_KEY แล้วให้ GitHub Actions สร้างไฟล์)</p>';
-    return;
-  }
-  const mb = (b) => (b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`);
-  const d = (s) => (s ? new Date(s).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) : '-');
-  box.innerHTML = idx.items.map((it) => `
-    <div class="dl-item">
-      <h3>${esc(it.title || 'พื้นที่น้ำท่วม ' + it.label)}</h3>
-      <div class="meta">${it.count.toLocaleString('th-TH')} แปลง · ${it.rai.toLocaleString('th-TH')} ไร่ · ${it.years ? `ข้อมูลปี ${esc(it.years)}` : `ภาพดาวเทียม ${d(it.from)} – ${d(it.to)}`}</div>
-      <div class="dl-btns">${it.files.map((f) => `
-        <a class="btn dl" href="data/gistda/downloads/${encodeURIComponent(f.file)}" download>${esc(f.format)}<small>${mb(f.bytes)}</small></a>`).join('')}
-      </div>
-    </div>`).join('') || '<p class="hint">ไม่มีข้อมูลพื้นที่น้ำท่วมในช่วงนี้</p>';
-  box.insertAdjacentHTML('beforeend', `<p class="hint" style="grid-column:1/-1;margin:0">สร้างไฟล์เมื่อ ${new Date(idx.updated).toLocaleString('th-TH', { dateStyle: 'medium', timeStyle: 'short' })} · อัปเดตทุก 3 ชั่วโมง</p>`);
-}
-
 // ---------------- Longdo Map ----------------
 // รายงานน้ำท่วมถนนจาก Longdo Traffic (ไม่ต้องใช้ key) แสดงทั้งประเทศบนแผนที่ ตารางเรียงตามระยะ
 async function loadLongdoFloods() {
@@ -578,6 +555,5 @@ async function refreshAll() {
   });
   await refreshAll();
   loadFreqSummary();
-  loadDownloads();
   setInterval(refreshAll, REFRESH_MS);
 })();

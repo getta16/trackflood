@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>อุทกภัยกำแพงเพชร 2569</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>สรุปอุทกภัย จังหวัดกำแพงเพชร ปี 2569</h1>
+      <p class="sub">18 ก.ย. – 12 ต.ค. 2569 · ที่มา: โครงการชลประทานกำแพงเพชร สำนักงานชลประทานที่ 4 กรมชลประทาน</p>
+    </div>
+  </header>
+
+  <section class="kpis" id="facts"></section>
+
+  <main class="grid">
+    <section class="card wide source">
+      <div class="card-head"><h2>ที่มาของข้อมูล</h2></div>
+      <p id="source-text"></p>
+      <ul class="notes" id="notes"></ul>
+    </section>
+
+    <section class="card map-card">
+      <div class="card-head"><h2>แผนที่จุดประสบอุทกภัย</h2></div>
+      <div id="map"></div>
+      <div class="legend" id="legend"></div>
+      <p class="hint">ตัวเลขบนหมุด = ลำดับจุดในตาราง · พิกัดจาก OpenStreetMap ระดับหมู่บ้าน/ตำบล จุดที่ระบุ "พิกัดโดยประมาณ" อาจคลาดเคลื่อนจากตำแหน่งจริง</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>จำนวนจุดประสบภัยตามรายงาน</h2></div>
+      <div class="chart"><canvas id="daily-chart"></canvas></div>
+      <p class="hint">นับตามบัญชีจุดในรายงานแต่ละฉบับ (เริ่มมีบัญชีจุดตั้งแต่ 28 ก.ย.)</p>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h2>ลำดับเหตุการณ์ 3 ระลอก</h2></div>
+      <div class="table-wrap"><table id="waves"><thead><tr><th>ระลอก</th><th>ช่วงเวลา</th><th>พื้นที่</th><th>ลำน้ำ</th><th>สาเหตุ/ฝน</th><th>ผลกระทบสูงสุด</th><th>กลับสู่ปกติ</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>ปริมาณน้ำไหลผ่านสถานีและอาคารชลประทาน</h2></div>
+      <div class="chart"><canvas id="flow-chart"></canvas></div>
+      <p class="hint">ลบ.ม./วินาที ตามที่รายงาน (ช่วงที่ไม่ได้รายงานเว้นว่าง) · P.26/26B รวมสถานี P.26, TP.26A และ P.26B</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>อ่างเก็บน้ำ (% ความจุ)</h2></div>
+      <div class="chart"><canvas id="res-chart"></canvas></div>
+      <p class="hint">เกิน 100% = น้ำล้น Spillway</p>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h2>บัญชีจุดประสบอุทกภัย</h2></div>
+      <div class="table-wrap"><table id="points"><thead><tr><th class="num">#</th><th>จุด</th><th>ตำบล / อำเภอ</th><th>ลำน้ำ</th><th>ระลอก</th><th>ช่วงรายงาน</th><th>ระดับน้ำสูงสุด (ม.)</th><th>สถานะล่าสุด</th></tr></thead><tbody></tbody></table></div>
+      <p class="hint">คลิกแถวเพื่อดูจุดบนแผนที่และระดับน้ำรายฉบับ</p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>ปริมาณฝนสูงสุดที่รายงาน</h2></div>
+      <div class="table-wrap"><table id="rain"><thead><tr><th>ช่วงฝน</th><th>อำเภอ</th><th class="num">มม.</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>การดำเนินการของโครงการชลประทาน</h2></div>
+      <div class="table-wrap"><table id="actions" class="wrap"><thead><tr><th>ประเภท</th><th>รายละเอียด</th><th>พื้นที่</th><th>ช่วงเวลา</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h2>รายงานต้นฉบับที่ใช้สรุป</h2></div>
+      <div class="table-wrap"><table id="files"><thead><tr><th>รายงาน</th><th>ข้อมูล ณ</th></tr></thead><tbody></tbody></table></div>
+    </section>
+  </main>
+
+  <footer>
+    ที่มา: รายงานสถานการณ์อุทกภัยจังหวัดกำแพงเพชร ของโครงการชลประทานกำแพงเพชร สำนักงานชลประทานที่ 4 <a href="https://www.rid.go.th" target="_blank" rel="noopener">กรมชลประทาน</a> ·
+    ขอบเขตจังหวัด/แผนที่ฐาน: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>, Esri
+    <br>หน้านี้เป็นการเรียบเรียงจากรายงานของหน่วยงาน ตัวเลขทางการให้ยึดตามรายงานต้นฉบับ ปภ. และกรมชลประทาน
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="nav.js"></script>
+  <script src="flood2569-data.js"></script>
+  <script src="flood2569.js"></script>
+</body>
+</html>

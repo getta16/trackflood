@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ดาวน์โหลดข้อมูล กำแพงเพชร</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>ดาวน์โหลดข้อมูล</h1>
+      <p class="sub">ข้อมูลน้ำท่วมจังหวัดกำแพงเพชร สำหรับใช้ต่อใน QGIS, ArcGIS หรือ Google Earth</p>
+    </div>
+  </header>
+
+  <main class="grid one">
+    <section class="card wide">
+      <div class="card-head"><h2>พื้นที่น้ำท่วมจากดาวเทียม (GISTDA)</h2></div>
+      <div id="downloads" class="dl-grid"><p class="hint">กำลังโหลด…</p></div>
+      <p class="hint">รูปทรงพื้นที่จริงจาก GISTDA (ละเอียดกว่าบนแผนที่) · น้ำท่วมซ้ำซากมีทุกแปลงที่เคยท่วม ไม่ใช่เฉพาะ 5 ปีขึ้นไป · WGS84 (EPSG:4326) · ในไฟล์ zip มี README อธิบายฟิลด์ · KMZ เปิดใน Google Earth ได้</p>
+      <p class="hint">ที่มา: <a href="https://disaster.gistda.or.th" target="_blank" rel="noopener">GISTDA Disaster Platform</a></p>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h2>จุดประสบอุทกภัยปี 2569 (กรมชลประทาน)</h2></div>
+      <div id="dl-2569" class="dl-grid"></div>
+      <p class="hint">จุดประสบภัย 18 จุด และสถานีวัดน้ำ 7 สถานี ช่วง 18 ก.ย. – 12 ต.ค. 2569 · WGS84 (EPSG:4326) · CSV เข้ารหัส UTF-8 เปิดใน Excel ได้ · พิกัดหลายจุดเป็นค่าโดยประมาณระดับหมู่บ้าน/ตำบลจาก OpenStreetMap</p>
+      <p class="hint">ที่มา: รายงานสถานการณ์อุทกภัยของโครงการชลประทานกำแพงเพชร สำนักงานชลประทานที่ 4 กรมชลประทาน · ดูรายละเอียดที่หน้า <a href="flood2569.html">สรุปอุทกภัยปี 2569</a></p>
+    </section>
+  </main>
+
+  <footer>
+    ข้อมูลใช้เพื่อการติดตามเบื้องต้น ประกาศเตือนภัยทางการให้ยึดตาม ปภ. กรมชลประทาน และกรมอุตุนิยมวิทยา
+  </footer>
+
+  <script src="nav.js"></script>
+  <script src="flood2569-data.js"></script>
+  <script src="downloads.js"></script>
+</body>
+</html>
