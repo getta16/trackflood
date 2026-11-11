@@ -181,6 +181,9 @@ body.has-sidebar.sidebar-open { padding-left: var(--sb-w); }
 .vt-boundary path { fill: none; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .vt-boundary .halo { stroke: rgba(255, 255, 255, .85); stroke-width: 4.5; }
 .vt-boundary .line { stroke: #e03131; stroke-width: 2.2; }
-.vt-shield { position: absolute; inset: 0; cursor: not-allowed; }
+/* เว้นแถบเวลาด้านล่างของ Ventusky (~76px) ให้กด Play/เลื่อนเวลาได้ขณะล็อก */
+.vt-shield { position: absolute; top: 0; left: 0; right: 0; bottom: 78px; cursor: not-allowed; }
 .vt-wrap.unlocked .vt-shield, .vt-wrap.unlocked .vt-boundary { display: none; }
 @media (max-width: 600px) { .vt-wrap { aspect-ratio: 4 / 5; } }
+input[type=date] { font: inherit; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); color-scheme: light dark; }
+.card-head .ctl { flex-wrap: wrap; justify-content: flex-end; }

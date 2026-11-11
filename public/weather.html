@@ -30,6 +30,8 @@
             <option value="clouds-total">เมฆปกคลุม</option>
             <option value="rh-2m">ความชื้นสัมพัทธ์</option>
           </select>
+          <label for="vt-date">วันที่</label>
+          <input type="date" id="vt-date">
           <button class="btn" type="button" id="vt-lock" aria-pressed="true">ปลดล็อกแผนที่</button>
         </div>
       </div>
@@ -38,7 +40,7 @@
         <svg class="vt-boundary" id="vt-boundary" aria-hidden="true"></svg>
         <div class="vt-shield" id="vt-shield"></div>
       </div>
-      <p class="hint" id="vt-hint">เส้นสีแดง = ขอบเขตจังหวัดกำแพงเพชร · แผนที่ถูกล็อกไว้เพื่อให้เส้นขอบเขตตรงตำแหน่ง กด "ปลดล็อกแผนที่" เพื่อเลื่อน/ซูมหรือใช้แถบเวลาของ Ventusky (เส้นขอบเขตจะซ่อนระหว่างนั้น)</p>
+      <p class="hint" id="vt-hint">เส้นสีแดง = ขอบเขตจังหวัดกำแพงเพชร · เลือกวันที่ย้อนหลังแล้วกด ▶ Play หรือเลื่อนแถบเวลาด้านล่างได้ โดยเส้นขอบเขตยังแสดงอยู่ · แผนที่ถูกล็อกไม่ให้เลื่อน/ซูมเพื่อให้เส้นขอบเขตตรงตำแหน่ง กด "ปลดล็อกแผนที่" หากต้องการเลื่อนเอง (เส้นขอบเขตจะซ่อนระหว่างนั้น)</p>
       <p class="hint">ที่มา: <a href="https://www.ventusky.com/?p=16.47;99.47;7" target="_blank" rel="noopener">Ventusky</a> · ขอบเขตจังหวัดจาก OpenStreetMap</p>
     </section>
   </main>

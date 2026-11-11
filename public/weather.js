@@ -11,10 +11,20 @@
   const svg = document.getElementById('vt-boundary');
   const layerSel = document.getElementById('vt-layer');
   const lockBtn = document.getElementById('vt-lock');
+  const dateInp = document.getElementById('vt-date');
 
-  function frameSrc(layer) {
-    return `https://embed.ventusky.com/?p=${VIEW.lat};${VIEW.lon};${VIEW.zoom}&l=${encodeURIComponent(layer)}`;
+  // วันนี้ตามเวลาไทย (YYYY-MM-DD) เป็นค่าเริ่มต้น
+  const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
+  dateInp.value = today;
+
+  // t=YYYYMMDD/HHMM เป็นเวลา UTC: วันย้อนหลังเริ่มที่ 07:00 น. ไทย (00 UTC) แล้วกด Play ไล่ทั้งวันได้
+  function frameSrc() {
+    let src = `https://embed.ventusky.com/?p=${VIEW.lat};${VIEW.lon};${VIEW.zoom}&l=${encodeURIComponent(layerSel.value)}`;
+    const d = dateInp.value;
+    if (d && d !== today) src += `&t=${d.replace(/-/g, '')}/0000`;
+    return src;
   }
+  const reload = () => { frame.src = frameSrc(); };
 
   // พิกัดโลก (พิกเซลที่ซูม z) ตามสูตร Web Mercator
   function project(lon, lat, z) {
@@ -41,15 +51,16 @@
     lockBtn.setAttribute('aria-pressed', String(locked));
     lockBtn.textContent = locked ? 'ปลดล็อกแผนที่' : 'ล็อกและแสดงขอบเขต';
     // ล็อกกลับ = โหลด iframe ใหม่ให้กลับไปที่ตำแหน่งเดิม เส้นขอบเขตจะได้ตรง
-    if (locked) frame.src = frameSrc(layerSel.value);
+    if (locked) reload();
   }
 
-  layerSel.addEventListener('change', () => { frame.src = frameSrc(layerSel.value); });
+  layerSel.addEventListener('change', reload);
+  dateInp.addEventListener('change', reload);
   lockBtn.addEventListener('click', () => setLocked(wrap.classList.contains('unlocked')));
   window.addEventListener('resize', draw);
   if ('ResizeObserver' in window) new ResizeObserver(draw).observe(wrap);
 
-  frame.src = frameSrc(layerSel.value);
+  reload();
 
   fetch('kpp_boundary.geojson').then((r) => r.json()).then((fc) => {
     for (const f of fc.features) {
