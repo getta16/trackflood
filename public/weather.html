@@ -34,16 +34,22 @@
           <button class="btn" type="button" id="vt-prev" aria-label="วันก่อนหน้า">◀</button>
           <input type="date" id="vt-date">
           <button class="btn" type="button" id="vt-next" aria-label="วันถัดไป">▶</button>
-          <button class="btn" type="button" id="vt-lock" aria-pressed="true">ปลดล็อกแผนที่</button>
         </div>
       </div>
       <div class="vt-wrap" id="vt-wrap">
         <iframe id="vt-frame" title="แผนที่อากาศ Ventusky" loading="lazy"></iframe>
         <svg class="vt-boundary" id="vt-boundary" aria-hidden="true"></svg>
         <div class="vt-shield" id="vt-shield"></div>
+        <div class="vt-shield vt-shield-date" aria-hidden="true"></div>
       </div>
-      <p class="hint" id="vt-hint">เส้นสีแดง = ขอบเขตจังหวัดกำแพงเพชร · เลือกวันย้อนหลังจากช่อง "วันที่" ด้านบน หรือปุ่ม Change date ใต้แผนที่ แล้วกด ▶ Play หรือเลื่อนแถบเวลาได้ โดยเส้นขอบเขตยังแสดงอยู่ · แผนที่ถูกล็อกไม่ให้เลื่อน/ซูมเพื่อให้เส้นขอบเขตตรงตำแหน่ง กด "ปลดล็อกแผนที่" หากต้องการเลื่อนเอง (เส้นขอบเขตจะซ่อนระหว่างนั้น)</p>
-      <p class="hint">ที่มา: <a href="https://www.ventusky.com/?p=16.47;99.47;7" target="_blank" rel="noopener">Ventusky</a> · ขอบเขตจังหวัดจาก OpenStreetMap</p>
+      <div class="vt-layers" role="group" aria-label="ขอบเขตที่แสดง">
+        <label><input type="checkbox" data-layer="province" checked><i class="sw-line province"></i>จังหวัดกำแพงเพชร</label>
+        <label><input type="checkbox" data-layer="tambon" checked><i class="sw-line tambon"></i>32 ตำบล</label>
+        <label><input type="checkbox" data-layer="suanmak" checked><i class="sw-line suanmak"></i>ลุ่มน้ำคลองสวนหมาก</label>
+        <label><input type="checkbox" data-layer="khlung" checked><i class="sw-line khlung"></i>ลุ่มน้ำคลองขลุง</label>
+      </div>
+      <p class="hint" id="vt-hint">ติ๊กเพื่อเปิด/ปิดขอบเขตแต่ละชั้น · เลือกวันที่จากช่อง "วันที่" ด้านบน (หรือปุ่ม ◀ ▶) แล้วกด ▶ Play หรือเลื่อนแถบเวลาใต้แผนที่ · แผนที่ถูกล็อกไว้ไม่ให้เลื่อน/ซูม เพื่อให้เส้นขอบเขตตรงตำแหน่งเสมอ</p>
+      <p class="hint">ที่มา: <a href="https://www.ventusky.com/?p=16.47;99.47;7" target="_blank" rel="noopener">Ventusky</a> · ขอบเขตจังหวัดจาก OpenStreetMap · ขอบเขตตำบลและลุ่มน้ำย่อยจากข้อมูลโครงการ</p>
     </section>
   </main>
 

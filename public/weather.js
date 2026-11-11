@@ -1,6 +1,6 @@
 // แผนที่อากาศ Ventusky (iframe) + เส้นขอบเขตจังหวัดวาดทับด้วย SVG
 // Ventusky ใช้ Web Mercator แบบเดียวกับแผนที่ทั่วไป จึงคำนวณตำแหน่งพิกเซลจากศูนย์กลาง/ซูมเดียวกันได้
-// เส้นจะตรงก็ต่อเมื่อแผนที่ใน iframe ไม่ถูกเลื่อน จึงล็อกการโต้ตอบไว้เป็นค่าเริ่มต้น
+// เส้นจะตรงก็ต่อเมื่อแผนที่ใน iframe ไม่ถูกเลื่อน จึงล็อกแผนที่ไว้ตลอด เปลี่ยนได้เฉพาะชั้นข้อมูล วันที่ และแถบเวลา
 (function () {
   const VIEW = { lat: 16.47, lon: 99.47, zoom: 7 };
   // ซูมของ Ventusky ใหญ่กว่า Web Mercator มาตรฐาน 1 ระดับ (เทียบจากตำแหน่งเมืองบนแผนที่) จึงใช้ 512
@@ -10,7 +10,6 @@
   const frame = document.getElementById('vt-frame');
   const svg = document.getElementById('vt-boundary');
   const layerSel = document.getElementById('vt-layer');
-  const lockBtn = document.getElementById('vt-lock');
   const dateInp = document.getElementById('vt-date');
 
   // วันนี้ตามเวลาไทย (YYYY-MM-DD) เป็นค่าเริ่มต้น
@@ -33,26 +32,34 @@
     return [((lon + 180) / 360) * s, (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * s];
   }
 
-  let rings = [];
+  // ชั้นขอบเขตที่วาดทับ (วาดตามลำดับ ชั้นท้ายอยู่บนสุด) id ตรงกับ checkbox data-layer ใน weather.html
+  const OVERLAYS = [
+    { id: 'tambon', url: 'tambon32.geojson', cls: 'tambon' },
+    { id: 'khlung', url: 'basin_khlung.geojson', cls: 'khlung' },
+    { id: 'suanmak', url: 'basin_suanmak.geojson', cls: 'suanmak' },
+    { id: 'province', url: 'kpp_boundary.geojson', cls: 'province' },
+  ];
+  const ringsOf = (fc) => fc.features.flatMap((f) => {
+    const g = f.geometry || {};
+    return g.type === 'Polygon' ? g.coordinates : g.type === 'MultiPolygon' ? g.coordinates.flat() : [];
+  });
+
   function draw() {
     const w = wrap.clientWidth, h = wrap.clientHeight;
-    if (!w || !h || !rings.length) return;
+    if (!w || !h) return;
     const [cx, cy] = project(VIEW.lon, VIEW.lat, VIEW.zoom);
-    const d = rings.map((ring) => ring.map(([lon, lat], i) => {
+    const toD = (rings) => rings.map((ring) => ring.map(([lon, lat], i) => {
       const [x, y] = project(lon, lat, VIEW.zoom);
       return `${i ? 'L' : 'M'}${(x - cx + w / 2).toFixed(1)} ${(y - cy + h / 2).toFixed(1)}`;
     }).join('') + 'Z').join('');
     svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-    svg.innerHTML = `<path d="${d}" class="halo"/><path d="${d}" class="line"/>`;
+    svg.innerHTML = OVERLAYS.filter((o) => o.rings && o.on).map((o) => {
+      const d = o.d || (o.d = toD(o.rings));
+      return `<g class="${o.cls}"><path d="${d}" class="halo"/><path d="${d}" class="line"/></g>`;
+    }).join('');
   }
-
-  function setLocked(locked) {
-    wrap.classList.toggle('unlocked', !locked);
-    lockBtn.setAttribute('aria-pressed', String(locked));
-    lockBtn.textContent = locked ? 'ปลดล็อกแผนที่' : 'ล็อกและแสดงขอบเขต';
-    // ล็อกกลับ = โหลด iframe ใหม่ให้กลับไปที่ตำแหน่งเดิม เส้นขอบเขตจะได้ตรง
-    if (locked) reload();
-  }
+  // ขนาดกรอบเปลี่ยน = คำนวณ path ใหม่
+  const redraw = () => { OVERLAYS.forEach((o) => { o.d = null; }); draw(); };
 
   layerSel.addEventListener('change', reload);
   dateInp.max = today;
@@ -70,38 +77,16 @@
   }
   document.getElementById('vt-prev').addEventListener('click', () => shiftDay(-1));
   document.getElementById('vt-next').addEventListener('click', () => shiftDay(1));
-  lockBtn.addEventListener('click', () => setLocked(wrap.classList.contains('unlocked')));
-
-  // ปฏิทิน "Change date" ของ Ventusky เปิดขึ้นด้านบนแถบเวลา ทับส่วนที่ล็อกไว้
-  // เมื่อผู้ใช้คลิกในแถบเวลา (iframe ได้ focus) ให้ยกเลิกชั้นล็อกชั่วคราว เส้นขอบเขตยังแสดงอยู่
-  // แล้วล็อกกลับเมื่อเมาส์ออกนอกแผนที่ (หน้าเว็บของเรารับ pointermove อีกครั้ง)
-  window.addEventListener('blur', () => {
-    setTimeout(() => {
-      if (document.activeElement === frame && !wrap.classList.contains('unlocked')) wrap.classList.add('picking');
-    }, 0);
-  });
-  // ล็อกกลับเฉพาะเมื่อเมาส์อยู่นอกกรอบแผนที่ชัดเจน (กันรายการ dropdown เดือน/ปีของปฏิทินทำให้ล็อกก่อนเลือกเสร็จ)
-  document.addEventListener('pointermove', (e) => {
-    if (!wrap.classList.contains('picking')) return;
-    const r = wrap.getBoundingClientRect(), m = 24;
-    if (e.clientX > r.left - m && e.clientX < r.right + m && e.clientY > r.top - m && e.clientY < r.bottom + m) return;
-    wrap.classList.remove('picking');
-    // คืน focus ให้หน้าเว็บ ครั้งถัดไปที่คลิกแถบเวลาจะได้รับ blur อีก
-    if (document.activeElement === frame) frame.blur();
-  });
-  window.addEventListener('resize', draw);
-  if ('ResizeObserver' in window) new ResizeObserver(draw).observe(wrap);
+  window.addEventListener('resize', redraw);
+  if ('ResizeObserver' in window) new ResizeObserver(redraw).observe(wrap);
 
   reload();
 
-  fetch('kpp_boundary.geojson').then((r) => r.json()).then((fc) => {
-    for (const f of fc.features) {
-      const g = f.geometry;
-      const polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
-      for (const p of polys) rings.push(...p);
-    }
-    draw();
-  }).catch(() => {
-    document.getElementById('vt-hint').textContent = 'โหลดขอบเขตจังหวัดไม่สำเร็จ';
-  });
+  for (const o of OVERLAYS) {
+    const cb = document.querySelector(`input[data-layer="${o.id}"]`);
+    o.on = cb ? cb.checked : true;
+    if (cb) cb.addEventListener('change', () => { o.on = cb.checked; draw(); });
+    fetch(o.url).then((r) => r.json()).then((fc) => { o.rings = ringsOf(fc); draw(); })
+      .catch(() => { if (cb) cb.closest('label').classList.add('failed'); });
+  }
 })();

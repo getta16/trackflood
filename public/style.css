@@ -179,12 +179,28 @@ body.has-sidebar.sidebar-open { padding-left: var(--sb-w); }
 .vt-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
 .vt-boundary { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .vt-boundary path { fill: none; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.vt-boundary .halo { stroke: rgba(255, 255, 255, .85); stroke-width: 4.5; }
-.vt-boundary .line { stroke: #e03131; stroke-width: 2.2; }
 /* เว้นแถบเวลาด้านล่างของ Ventusky (~76px) ให้กด Play/เลื่อนเวลาได้ขณะล็อก */
 .vt-shield { position: absolute; top: 0; left: 0; right: 0; bottom: 78px; cursor: not-allowed; }
-.vt-wrap.unlocked .vt-shield, .vt-wrap.unlocked .vt-boundary { display: none; }
-.vt-wrap.picking .vt-shield { display: none; }
+/* ปิดปุ่ม Change date ของ Ventusky (ใช้ช่องวันที่ของหน้าเว็บแทน) แต่ยังกด Play และแถบเวลาได้ */
+.vt-shield.vt-shield-date { top: auto; bottom: 0; left: 46px; right: auto; width: 186px; height: 78px; }
 @media (max-width: 600px) { .vt-wrap { aspect-ratio: 4 / 5; } }
 input[type=date] { cursor: pointer; font: inherit; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); color-scheme: light dark; }
 .card-head .ctl { flex-wrap: wrap; justify-content: flex-end; }
+/* ชั้นขอบเขตบนแผนที่อากาศ */
+.vt-boundary .halo { stroke: rgba(255, 255, 255, .85); }
+.vt-boundary .province .halo { stroke-width: 4.5; }
+.vt-boundary .province .line { stroke: #e03131; stroke-width: 2.2; }
+.vt-boundary .tambon .halo { stroke: rgba(0, 0, 0, .45); stroke-width: 2.4; }
+.vt-boundary .tambon .line { stroke: #fff3bf; stroke-width: 1; stroke-dasharray: 4 3; }
+.vt-boundary .suanmak .halo { stroke-width: 5; }
+.vt-boundary .suanmak .line { stroke: #1c7ed6; stroke-width: 2.6; }
+.vt-boundary .khlung .halo { stroke-width: 5; }
+.vt-boundary .khlung .line { stroke: #0ca678; stroke-width: 2.6; }
+.vt-layers { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; font-size: .85rem; }
+.vt-layers label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.vt-layers label.failed { opacity: .5; text-decoration: line-through; }
+.sw-line { display: inline-block; width: 22px; height: 0; border-top: 3px solid; }
+.sw-line.province { border-color: #e03131; }
+.sw-line.tambon { border-top: 2px dashed #e0b400; }
+.sw-line.suanmak { border-color: #1c7ed6; }
+.sw-line.khlung { border-color: #0ca678; }
