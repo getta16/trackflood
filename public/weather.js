@@ -57,6 +57,21 @@
   layerSel.addEventListener('change', reload);
   dateInp.addEventListener('change', reload);
   lockBtn.addEventListener('click', () => setLocked(wrap.classList.contains('unlocked')));
+
+  // ปฏิทิน "Change date" ของ Ventusky เปิดขึ้นด้านบนแถบเวลา ทับส่วนที่ล็อกไว้
+  // เมื่อผู้ใช้คลิกในแถบเวลา (iframe ได้ focus) ให้ยกเลิกชั้นล็อกชั่วคราว เส้นขอบเขตยังแสดงอยู่
+  // แล้วล็อกกลับเมื่อเมาส์ออกนอกแผนที่ (หน้าเว็บของเรารับ pointermove อีกครั้ง)
+  window.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (document.activeElement === frame && !wrap.classList.contains('unlocked')) wrap.classList.add('picking');
+    }, 0);
+  });
+  document.addEventListener('pointermove', () => {
+    if (!wrap.classList.contains('picking')) return;
+    wrap.classList.remove('picking');
+    // คืน focus ให้หน้าเว็บ ครั้งถัดไปที่คลิกแถบเวลาจะได้รับ blur อีก
+    if (document.activeElement === frame) frame.blur();
+  });
   window.addEventListener('resize', draw);
   if ('ResizeObserver' in window) new ResizeObserver(draw).observe(wrap);
 
