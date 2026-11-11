@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>แผนที่อากาศ กำแพงเพชร</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div>
+      <h1>แผนที่อากาศ (Ventusky)</h1>
+      <p class="sub">อุณหภูมิ ฝน ลม และเมฆ พร้อมขอบเขตจังหวัดกำแพงเพชร</p>
+    </div>
+  </header>
+
+  <main class="grid one">
+    <section class="card wide">
+      <div class="card-head">
+        <h2>แผนที่อากาศ</h2>
+        <div class="ctl">
+          <label for="vt-layer">ชั้นข้อมูล</label>
+          <select id="vt-layer">
+            <option value="temperature-2m">อุณหภูมิ (2 ม.)</option>
+            <option value="rain-3h">ฝน (3 ชม.)</option>
+            <option value="radar">เรดาร์ฝน</option>
+            <option value="wind-10m">ลม (10 ม.)</option>
+            <option value="clouds-total">เมฆปกคลุม</option>
+            <option value="rh-2m">ความชื้นสัมพัทธ์</option>
+          </select>
+          <button class="btn" type="button" id="vt-lock" aria-pressed="true">ปลดล็อกแผนที่</button>
+        </div>
+      </div>
+      <div class="vt-wrap" id="vt-wrap">
+        <iframe id="vt-frame" title="แผนที่อากาศ Ventusky" loading="lazy"></iframe>
+        <svg class="vt-boundary" id="vt-boundary" aria-hidden="true"></svg>
+        <div class="vt-shield" id="vt-shield"></div>
+      </div>
+      <p class="hint" id="vt-hint">เส้นสีแดง = ขอบเขตจังหวัดกำแพงเพชร · แผนที่ถูกล็อกไว้เพื่อให้เส้นขอบเขตตรงตำแหน่ง กด "ปลดล็อกแผนที่" เพื่อเลื่อน/ซูมหรือใช้แถบเวลาของ Ventusky (เส้นขอบเขตจะซ่อนระหว่างนั้น)</p>
+      <p class="hint">ที่มา: <a href="https://www.ventusky.com/?p=16.47;99.47;7" target="_blank" rel="noopener">Ventusky</a> · ขอบเขตจังหวัดจาก OpenStreetMap</p>
+    </section>
+  </main>
+
+  <footer>
+    ข้อมูลใช้เพื่อการติดตามเบื้องต้น ประกาศเตือนภัยทางการให้ยึดตาม ปภ. กรมชลประทาน และกรมอุตุนิยมวิทยา
+  </footer>
+
+  <script src="nav.js"></script>
+  <script src="weather.js"></script>
+</body>
+</html>

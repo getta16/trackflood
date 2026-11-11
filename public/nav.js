@@ -3,6 +3,7 @@
   const PAGES = [
     { href: 'index.html', icon: '🌊', label: 'สถานการณ์น้ำ จังหวัดกำแพงเพชร' },
     { href: 'flood2569.html', icon: '📋', label: 'สรุปอุทกภัยปี 2569' },
+    { href: 'weather.html', icon: '🌡️', label: 'แผนที่อากาศ (Ventusky)' },
     { href: 'downloads.html', icon: '📥', label: 'ดาวน์โหลดข้อมูล' },
   ];
   const KEY = 'trackflood.sidebar';
