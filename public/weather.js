@@ -16,16 +16,19 @@
 
   // วันนี้ตามเวลาไทย (YYYY-MM-DD) เป็นค่าเริ่มต้น
   const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
-  dateInp.value = today;
+  if (dateInp) dateInp.value = today;
 
   // t=YYYYMMDD/HHMM เป็นเวลา UTC: วันย้อนหลังเริ่มที่ 07:00 น. ไทย (00 UTC) แล้วกด Play ไล่ทั้งวันได้
   function frameSrc() {
     let src = `https://embed.ventusky.com/?p=${VIEW.lat};${VIEW.lon};${VIEW.zoom}&l=${encodeURIComponent(layerSel.value)}`;
-    const d = dateInp.value;
+    const d = dateInp && dateInp.value;
     if (d && d !== today) src += `&t=${d.replace(/-/g, '')}/0000`;
     return src;
   }
   const reload = () => { frame.src = frameSrc(); };
+  // โหลดแผนที่ก่อนอย่างอื่น ถ้าปุ่มใดหาไม่เจอ (เช่นเบราว์เซอร์ยังจำ HTML เก่า) แผนที่ก็ยังขึ้น
+  reload();
+  const on = (el, ev, fn) => { if (el) el.addEventListener(ev, fn); };
 
   // พิกัดโลก (พิกเซลที่ซูม z) ตามสูตร Web Mercator
   function project(lon, lat, z) {
@@ -63,11 +66,11 @@
   // ขนาดกรอบเปลี่ยน = คำนวณ path ใหม่
   const redraw = () => { OVERLAYS.forEach((o) => { o.d = null; }); draw(); };
 
-  layerSel.addEventListener('change', reload);
-  dateInp.max = today;
-  dateInp.addEventListener('change', reload);
+  on(layerSel, 'change', reload);
+  if (dateInp) dateInp.max = today;
+  on(dateInp, 'change', reload);
   // Chrome เปิดปฏิทินเฉพาะเมื่อกดไอคอน ให้กดตรงไหนของช่องก็เปิดปฏิทินได้
-  dateInp.addEventListener('click', () => { try { dateInp.showPicker(); } catch {} });
+  on(dateInp, 'click', () => { try { dateInp.showPicker(); } catch {} });
   // ปุ่มวันก่อนหน้า/ถัดไป
   function shiftDay(n) {
     const d = new Date((dateInp.value || today) + 'T00:00:00Z');
@@ -77,10 +80,10 @@
     dateInp.value = v;
     reload();
   }
-  document.getElementById('vt-prev').addEventListener('click', () => shiftDay(-1));
-  document.getElementById('vt-next').addEventListener('click', () => shiftDay(1));
+  on(document.getElementById('vt-prev'), 'click', () => shiftDay(-1));
+  on(document.getElementById('vt-next'), 'click', () => shiftDay(1));
   // ปลดล็อก = เลื่อน/ซูมได้ (ซ่อนเส้นขอบเขต) · ล็อกกลับ = โหลด iframe ใหม่ให้กลับตำแหน่งเดิม เส้นจะได้ตรง
-  lockBtn.addEventListener('click', () => {
+  on(lockBtn, 'click', () => {
     const locked = wrap.classList.toggle('unlocked') === false;
     lockBtn.setAttribute('aria-pressed', String(locked));
     lockBtn.textContent = locked ? 'ปลดล็อกแผนที่' : 'ล็อกและแสดงขอบเขต';
@@ -89,7 +92,6 @@
   window.addEventListener('resize', redraw);
   if ('ResizeObserver' in window) new ResizeObserver(redraw).observe(wrap);
 
-  reload();
 
   for (const o of OVERLAYS) {
     const cb = document.querySelector(`input[data-layer="${o.id}"]`);
