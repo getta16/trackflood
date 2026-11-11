@@ -183,6 +183,7 @@ body.has-sidebar.sidebar-open { padding-left: var(--sb-w); }
 .vt-shield { position: absolute; top: 0; left: 0; right: 0; bottom: 78px; cursor: not-allowed; }
 /* ปิดปุ่ม Change date ของ Ventusky (ใช้ช่องวันที่ของหน้าเว็บแทน) แต่ยังกด Play และแถบเวลาได้ */
 .vt-shield.vt-shield-date { top: auto; bottom: 0; left: 46px; right: auto; width: 186px; height: 78px; }
+.vt-wrap.unlocked .vt-shield, .vt-wrap.unlocked .vt-boundary { display: none; }
 @media (max-width: 600px) { .vt-wrap { aspect-ratio: 4 / 5; } }
 input[type=date] { cursor: pointer; font: inherit; padding: 2px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); color-scheme: light dark; }
 .card-head .ctl { flex-wrap: wrap; justify-content: flex-end; }

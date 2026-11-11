@@ -34,6 +34,7 @@
           <button class="btn" type="button" id="vt-prev" aria-label="วันก่อนหน้า">◀</button>
           <input type="date" id="vt-date">
           <button class="btn" type="button" id="vt-next" aria-label="วันถัดไป">▶</button>
+          <button class="btn" type="button" id="vt-lock" aria-pressed="true">ปลดล็อกแผนที่</button>
         </div>
       </div>
       <div class="vt-wrap" id="vt-wrap">
@@ -44,12 +45,12 @@
       </div>
       <div class="vt-layers" role="group" aria-label="ขอบเขตที่แสดง">
         <label><input type="checkbox" data-layer="province" checked><i class="sw-line province"></i>จังหวัดกำแพงเพชร</label>
-        <label><input type="checkbox" data-layer="tambon" checked><i class="sw-line tambon"></i>32 ตำบล</label>
-        <label><input type="checkbox" data-layer="suanmak" checked><i class="sw-line suanmak"></i>ลุ่มน้ำคลองสวนหมาก</label>
-        <label><input type="checkbox" data-layer="khlung" checked><i class="sw-line khlung"></i>ลุ่มน้ำคลองขลุง</label>
+        <label><input type="checkbox" data-layer="tambon"><i class="sw-line tambon"></i>32 ตำบล</label>
+        <label><input type="checkbox" data-layer="suanmak"><i class="sw-line suanmak"></i>ลุ่มน้ำคลองสวนหมาก</label>
+        <label><input type="checkbox" data-layer="khlung"><i class="sw-line khlung"></i>ลุ่มน้ำคลองขลุง</label>
       </div>
-      <p class="hint" id="vt-hint">ติ๊กเพื่อเปิด/ปิดขอบเขตแต่ละชั้น · เลือกวันที่จากช่อง "วันที่" ด้านบน (หรือปุ่ม ◀ ▶) แล้วกด ▶ Play หรือเลื่อนแถบเวลาใต้แผนที่ · แผนที่ถูกล็อกไว้ไม่ให้เลื่อน/ซูม เพื่อให้เส้นขอบเขตตรงตำแหน่งเสมอ</p>
-      <p class="hint">ที่มา: <a href="https://www.ventusky.com/?p=16.47;99.47;7" target="_blank" rel="noopener">Ventusky</a> · ขอบเขตจังหวัดจาก OpenStreetMap · ขอบเขตตำบลและลุ่มน้ำย่อยจากข้อมูลโครงการ</p>
+      <p class="hint" id="vt-hint">ติ๊กเพื่อเปิด/ปิดขอบเขตแต่ละชั้น · เลือกวันที่จากช่อง "วันที่" ด้านบน (หรือปุ่ม ◀ ▶) แล้วกด ▶ Play หรือเลื่อนแถบเวลาใต้แผนที่ · แผนที่ถูกล็อกไว้เพื่อให้เส้นขอบเขตตรงตำแหน่ง กด "ปลดล็อกแผนที่" เพื่อเลื่อน/ซูมเอง (เส้นขอบเขตจะซ่อนระหว่างนั้น กดล็อกอีกครั้งเพื่อกลับตำแหน่งเดิม)</p>
+      <p class="hint">ที่มา: <a href="https://www.ventusky.com/?p=16.3;99.53;8" target="_blank" rel="noopener">Ventusky</a> · ขอบเขตจังหวัดจาก OpenStreetMap · ขอบเขตตำบลและลุ่มน้ำย่อยจากข้อมูลโครงการ</p>
     </section>
   </main>
 

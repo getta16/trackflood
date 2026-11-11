@@ -1,8 +1,9 @@
 // แผนที่อากาศ Ventusky (iframe) + เส้นขอบเขตจังหวัดวาดทับด้วย SVG
 // Ventusky ใช้ Web Mercator แบบเดียวกับแผนที่ทั่วไป จึงคำนวณตำแหน่งพิกเซลจากศูนย์กลาง/ซูมเดียวกันได้
-// เส้นจะตรงก็ต่อเมื่อแผนที่ใน iframe ไม่ถูกเลื่อน จึงล็อกแผนที่ไว้ตลอด เปลี่ยนได้เฉพาะชั้นข้อมูล วันที่ และแถบเวลา
+// เส้นจะตรงก็ต่อเมื่อแผนที่ใน iframe ไม่ถูกเลื่อน จึงล็อกแผนที่ไว้เป็นค่าเริ่มต้น (ปลดล็อกได้ แต่เส้นขอบเขตจะซ่อน)
 (function () {
-  const VIEW = { lat: 16.47, lon: 99.47, zoom: 7 };
+  // ศูนย์กลางจังหวัด (เลื่อนลงใต้เล็กน้อยให้พ้นแถบเวลาด้านล่าง) ซูม 8 = ทั้งจังหวัดเต็มกรอบพอดี
+  const VIEW = { lat: 16.3, lon: 99.53, zoom: 8 };
   // ซูมของ Ventusky ใหญ่กว่า Web Mercator มาตรฐาน 1 ระดับ (เทียบจากตำแหน่งเมืองบนแผนที่) จึงใช้ 512
   const TILE = 512;
 
@@ -11,6 +12,7 @@
   const svg = document.getElementById('vt-boundary');
   const layerSel = document.getElementById('vt-layer');
   const dateInp = document.getElementById('vt-date');
+  const lockBtn = document.getElementById('vt-lock');
 
   // วันนี้ตามเวลาไทย (YYYY-MM-DD) เป็นค่าเริ่มต้น
   const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
@@ -77,6 +79,13 @@
   }
   document.getElementById('vt-prev').addEventListener('click', () => shiftDay(-1));
   document.getElementById('vt-next').addEventListener('click', () => shiftDay(1));
+  // ปลดล็อก = เลื่อน/ซูมได้ (ซ่อนเส้นขอบเขต) · ล็อกกลับ = โหลด iframe ใหม่ให้กลับตำแหน่งเดิม เส้นจะได้ตรง
+  lockBtn.addEventListener('click', () => {
+    const locked = wrap.classList.toggle('unlocked') === false;
+    lockBtn.setAttribute('aria-pressed', String(locked));
+    lockBtn.textContent = locked ? 'ปลดล็อกแผนที่' : 'ล็อกและแสดงขอบเขต';
+    if (locked) reload();
+  });
   window.addEventListener('resize', redraw);
   if ('ResizeObserver' in window) new ResizeObserver(redraw).observe(wrap);
 
