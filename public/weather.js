@@ -55,7 +55,21 @@
   }
 
   layerSel.addEventListener('change', reload);
+  dateInp.max = today;
   dateInp.addEventListener('change', reload);
+  // Chrome เปิดปฏิทินเฉพาะเมื่อกดไอคอน ให้กดตรงไหนของช่องก็เปิดปฏิทินได้
+  dateInp.addEventListener('click', () => { try { dateInp.showPicker(); } catch {} });
+  // ปุ่มวันก่อนหน้า/ถัดไป
+  function shiftDay(n) {
+    const d = new Date((dateInp.value || today) + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    const v = d.toISOString().slice(0, 10);
+    if (v > today) return;
+    dateInp.value = v;
+    reload();
+  }
+  document.getElementById('vt-prev').addEventListener('click', () => shiftDay(-1));
+  document.getElementById('vt-next').addEventListener('click', () => shiftDay(1));
   lockBtn.addEventListener('click', () => setLocked(wrap.classList.contains('unlocked')));
 
   // ปฏิทิน "Change date" ของ Ventusky เปิดขึ้นด้านบนแถบเวลา ทับส่วนที่ล็อกไว้
@@ -66,8 +80,11 @@
       if (document.activeElement === frame && !wrap.classList.contains('unlocked')) wrap.classList.add('picking');
     }, 0);
   });
-  document.addEventListener('pointermove', () => {
+  // ล็อกกลับเฉพาะเมื่อเมาส์อยู่นอกกรอบแผนที่ชัดเจน (กันรายการ dropdown เดือน/ปีของปฏิทินทำให้ล็อกก่อนเลือกเสร็จ)
+  document.addEventListener('pointermove', (e) => {
     if (!wrap.classList.contains('picking')) return;
+    const r = wrap.getBoundingClientRect(), m = 24;
+    if (e.clientX > r.left - m && e.clientX < r.right + m && e.clientY > r.top - m && e.clientY < r.bottom + m) return;
     wrap.classList.remove('picking');
     // คืน focus ให้หน้าเว็บ ครั้งถัดไปที่คลิกแถบเวลาจะได้รับ blur อีก
     if (document.activeElement === frame) frame.blur();
