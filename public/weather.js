@@ -20,7 +20,8 @@
 
   // t=YYYYMMDD/HHMM เป็นเวลา UTC: วันย้อนหลังเริ่มที่ 07:00 น. ไทย (00 UTC) แล้วกด Play ไล่ทั้งวันได้
   function frameSrc() {
-    let src = `https://embed.ventusky.com/?p=${VIEW.lat};${VIEW.lon};${VIEW.zoom}&l=${encodeURIComponent(layerSel.value)}`;
+    // vt-embed.html = embed ของ Ventusky ที่บังคับหน่วยเมตริก (มม.) แม้เบราว์เซอร์ตั้งภาษา en-US
+    let src = `vt-embed.html?p=${VIEW.lat};${VIEW.lon};${VIEW.zoom}&l=${encodeURIComponent(layerSel.value)}`;
     const d = dateInp && dateInp.value;
     if (d && d !== today) src += `&t=${d.replace(/-/g, '')}/0000`;
     return src;
