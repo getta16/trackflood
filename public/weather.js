@@ -17,8 +17,11 @@
   // วันนี้ตามเวลาไทย (YYYY-MM-DD) เป็นค่าเริ่มต้น
   const today = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10);
   if (dateInp) dateInp.value = today;
+  // ดูพยากรณ์ล่วงหน้าได้ไม่เกิน 14 วัน
+  const MAX_AHEAD = 14;
+  const lastDay = new Date(Date.parse(today) + MAX_AHEAD * 864e5).toISOString().slice(0, 10);
 
-  // t=YYYYMMDD/HHMM เป็นเวลา UTC: วันย้อนหลังเริ่มที่ 07:00 น. ไทย (00 UTC) แล้วกด Play ไล่ทั้งวันได้
+  // t=YYYYMMDD/HHMM เป็นเวลา UTC: วันอื่นที่ไม่ใช่วันนี้ (ย้อนหลังหรือล่วงหน้า) เริ่มที่ 07:00 น. ไทย (00 UTC) แล้วกด Play ไล่ทั้งวันได้
   function frameSrc() {
     let src = `https://embed.ventusky.com/?p=${VIEW.lat};${VIEW.lon};${VIEW.zoom}&l=${encodeURIComponent(layerSel.value)}`;
     const d = dateInp && dateInp.value;
@@ -67,7 +70,7 @@
   const redraw = () => { OVERLAYS.forEach((o) => { o.d = null; }); draw(); };
 
   on(layerSel, 'change', reload);
-  if (dateInp) dateInp.max = today;
+  if (dateInp) dateInp.max = lastDay;
   on(dateInp, 'change', reload);
   // Chrome เปิดปฏิทินเฉพาะเมื่อกดไอคอน ให้กดตรงไหนของช่องก็เปิดปฏิทินได้
   on(dateInp, 'click', () => { try { dateInp.showPicker(); } catch {} });
@@ -76,7 +79,7 @@
     const d = new Date((dateInp.value || today) + 'T00:00:00Z');
     d.setUTCDate(d.getUTCDate() + n);
     const v = d.toISOString().slice(0, 10);
-    if (v > today) return;
+    if (v > lastDay) return;
     dateInp.value = v;
     reload();
   }
