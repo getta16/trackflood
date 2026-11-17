@@ -136,6 +136,28 @@ table .meta { color: var(--muted); font-size: .78rem; }
   display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
   color: #fff; font: 700 12px 'IBM Plex Sans Thai', system-ui, sans-serif; border: 2px solid #fff; box-shadow: 0 1px 4px #0007;
 }
+.pin.off { opacity: .35; filter: grayscale(.7); transform: scale(.8); }
+.legend i.ring { background: transparent; border: 3px solid; width: 12px; height: 12px; }
+.tl-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 10px; }
+.tl-btn { padding: 6px 12px; white-space: nowrap; }
+.tl-play { min-width: 92px; font-weight: 600; border-color: var(--accent); color: var(--accent); }
+.tl-date { font-size: 1.05rem; min-width: 150px; font-variant-numeric: tabular-nums; }
+#tl-range { flex: 1 1 220px; min-width: 160px; accent-color: var(--accent); }
+.tl-layout { display: grid; grid-template-columns: 1fr 300px; gap: 12px; }
+.tl-side { display: flex; flex-direction: column; gap: 10px; max-height: 520px; overflow: auto; font-size: .88rem; }
+.tl-item { border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.tl-item .lbl { display: block; color: var(--muted); font-size: .78rem; margin-bottom: 2px; }
+.tl-item b { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.tl-item .meta { color: var(--muted); font-size: .78rem; line-height: 1.5; }
+.tl-st { font-size: .82rem; margin-top: 2px; }
+.tl-st td { padding: 2px 4px; border: 0; }
+.tl-st td.meta { white-space: normal; }
+.tl-chart { height: 200px; margin-top: 12px; cursor: pointer; }
+@media (max-width: 900px) {
+  .tl-layout { grid-template-columns: 1fr; }
+  .tl-side { max-height: none; }
+  .tl-date { min-width: 0; }
+}
 .stn { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid #1971c2; filter: drop-shadow(0 1px 1px #0007); }
 .leaflet-tooltip.stn-lbl { background: none; border: 0; box-shadow: none; padding: 0; font-weight: 600; font-size: 11px; color: #1971c2; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 .leaflet-tooltip.stn-lbl::before { display: none; }

@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261117a">
 </head>
 <body>
   <header class="top">
@@ -26,17 +26,26 @@
       <ul class="notes" id="notes"></ul>
     </section>
 
-    <section class="card map-card">
-      <div class="card-head"><h2>แผนที่จุดประสบอุทกภัย</h2></div>
-      <div id="map"></div>
+    <section class="card wide map-card" id="timeline">
+      <div class="card-head"><h2>ไทม์ไลน์น้ำท่วมรายวัน</h2><span class="ctl" id="tl-status"></span></div>
+      <div class="tl-bar">
+        <button class="btn tl-btn" id="tl-prev" type="button" aria-label="วันก่อนหน้า">&#9664;&#9664;</button>
+        <button class="btn tl-btn tl-play" id="tl-play" type="button" aria-label="เล่นไทม์ไลน์">&#9654; เล่น</button>
+        <button class="btn tl-btn" id="tl-next" type="button" aria-label="วันถัดไป">&#9654;&#9654;</button>
+        <b class="tl-date" id="tl-date">-</b>
+        <input type="range" id="tl-range" min="0" max="0" value="0" aria-label="เลือกวัน">
+        <label class="ctl">ความเร็ว <select id="tl-speed"><option value="1600">ช้า</option><option value="900" selected>ปกติ</option><option value="450">เร็ว</option></select></label>
+        <label class="ctl"><input type="checkbox" id="tl-satonly"> เฉพาะวันที่มีภาพดาวเทียม</label>
+      </div>
+      <div class="tl-layout">
+        <div id="map"></div>
+        <aside class="tl-side" id="tl-side" aria-live="polite"></aside>
+      </div>
+      <div class="chart tl-chart"><canvas id="tl-chart"></canvas></div>
       <div class="legend" id="legend"></div>
-      <p class="hint">ตัวเลขบนหมุด = ลำดับจุดในตาราง · พิกัดจาก OpenStreetMap ระดับหมู่บ้าน/ตำบล จุดที่ระบุ "พิกัดโดยประมาณ" อาจคลาดเคลื่อนจากตำแหน่งจริง</p>
-    </section>
-
-    <section class="card">
-      <div class="card-head"><h2>จำนวนจุดประสบภัยตามรายงาน</h2></div>
-      <div class="chart"><canvas id="daily-chart"></canvas></div>
-      <p class="hint">นับตามบัญชีจุดในรายงานแต่ละฉบับ (เริ่มมีบัญชีจุดตั้งแต่ 28 ก.ย.)</p>
+      <p class="hint" id="tl-hint">พื้นที่น้ำท่วมจากดาวเทียม: GISTDA (Sentinel-1, RADARSAT-2, COSMO-SkyMed) ตัดเฉพาะ จ.กำแพงเพชร แสดงภาพล่าสุดที่ถ่ายไม่เกินวันที่เลือก ·
+        ระดับน้ำ: ThaiWater ค่าสูงสุดรายวัน · ฝน: Open-Meteo (ERA5) กริด 0.25° เป็นค่าจากแบบจำลอง ไม่ใช่สถานีวัดฝน ·
+        หมุดตัวเลข = จุดประสบภัยตามรายงานกรมชลประทาน (สีจางเมื่อไม่อยู่ในช่วงที่รายงาน) พิกัดระดับหมู่บ้าน/ตำบลจาก OpenStreetMap · คลิกกราฟเพื่อข้ามไปวันนั้น</p>
     </section>
 
     <section class="card wide">
@@ -63,11 +72,17 @@
     </section>
 
     <section class="card">
+      <div class="card-head"><h2>จำนวนจุดประสบภัยตามรายงาน</h2></div>
+      <div class="chart"><canvas id="daily-chart"></canvas></div>
+      <p class="hint">นับตามบัญชีจุดในรายงานแต่ละฉบับ (เริ่มมีบัญชีจุดตั้งแต่ 28 ก.ย.)</p>
+    </section>
+
+    <section class="card">
       <div class="card-head"><h2>ปริมาณฝนสูงสุดที่รายงาน</h2></div>
       <div class="table-wrap"><table id="rain"><thead><tr><th>ช่วงฝน</th><th>อำเภอ</th><th class="num">มม.</th></tr></thead><tbody></tbody></table></div>
     </section>
 
-    <section class="card">
+    <section class="card wide">
       <div class="card-head"><h2>การดำเนินการของโครงการชลประทาน</h2></div>
       <div class="table-wrap"><table id="actions" class="wrap"><thead><tr><th>ประเภท</th><th>รายละเอียด</th><th>พื้นที่</th><th>ช่วงเวลา</th></tr></thead><tbody></tbody></table></div>
     </section>
@@ -87,7 +102,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="nav.js"></script>
-  <script src="flood2569-data.js"></script>
-  <script src="flood2569.js"></script>
+  <script src="flood2569-data.js?v=20261117a"></script>
+  <script src="flood2569.js?v=20261117a"></script>
 </body>
 </html>
